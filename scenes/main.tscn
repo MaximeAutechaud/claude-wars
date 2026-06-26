@@ -1,0 +1,69 @@
+[gd_scene load_steps=5 format=3 uid="uid://dcwmain0001ab"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/game_map.gd" id="2_gmap"]
+[ext_resource type="Script" path="res://scripts/units_layer.gd" id="3_ulayer"]
+[ext_resource type="Script" path="res://scripts/cursor.gd" id="4_cursor"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.5, 1.5)
+
+[node name="GameMap" type="TileMapLayer" parent="."]
+script = ExtResource("2_gmap")
+y_sort_enabled = true
+
+[node name="UnitsLayer" type="Node2D" parent="."]
+script = ExtResource("3_ulayer")
+
+[node name="Cursor" type="Node2D" parent="."]
+script = ExtResource("4_cursor")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TurnLabel" type="Label" parent="UI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_right = 120.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "Joueur 1 (Bleu)"
+
+[node name="AttackZoneButton" type="Button" parent="UI"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_right = 110.0
+offset_top = -52.0
+offset_bottom = -12.0
+visible = false
+text = "Zone d'attaque"
+
+[node name="EndTurnButton" type="Button" parent="UI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -160.0
+offset_right = -10.0
+offset_top = 10.0
+offset_bottom = 42.0
+text = "Fin de tour  [Entrée]"
+
+[node name="CoordLabel" type="Label" parent="UI"]
+offset_right = 160.0
+offset_top = 40.0
+offset_bottom = 72.0
+theme_override_font_sizes/font_size = 16
+text = "(-, -)"
+
+[connection signal="pressed" from="UI/AttackZoneButton" to="." method="_on_attack_zone_pressed"]
+[connection signal="pressed" from="UI/EndTurnButton" to="." method="_end_turn"]

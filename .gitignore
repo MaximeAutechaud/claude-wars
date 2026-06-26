@@ -1,0 +1,17 @@
+# Godot 4 — fichiers générés à l'import, ne pas versionner
+.godot/
+
+# Export presets (contient des chemins absolus locaux)
+export_presets.cfg
+
+# Builds
+builds/
+*.exe
+*.x86_64
+*.apk
+*.aab
+*.ipa
+
+# OS
+.DS_Store
+Thumbs.db
