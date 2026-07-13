@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32">
+  <polygon points="32,0.5 63,16 32,31.5 1,16" fill="#8c7359" stroke="#66523e" stroke-width="1.5"/>
+  <!-- pic secondaire -->
+  <polygon points="42,10 52,23 32,23" fill="#6e6e76" stroke="#54545c" stroke-width="1"/>
+  <!-- pic principal -->
+  <polygon points="27,3 42,24 12,24" fill="#82828c" stroke="#5a5a62" stroke-width="1"/>
+  <polygon points="27,3 31.5,9.5 22.5,9.5" fill="#eef1f6"/>
+</svg>

@@ -10,27 +10,31 @@ var _show_attack_zone := false
 const HIGHLIGHT        := Color(0.35, 0.65, 1.0, 0.40)
 const ATTACK_HIGHLIGHT := Color(1.0,  0.25, 0.25, 0.35)
 
-const BASE_DAMAGE    := 3
-const COUNTER_DAMAGE := 2
-
 var _unit_scene: PackedScene = preload("res://scenes/unit.tscn")
 
 func _ready() -> void:
 	y_sort_enabled = true
-	_spawn_test_units()
+	_spawn_armies()
 
-func _spawn_test_units() -> void:
-	spawn(Vector2i(1, 1), 0, 3)
-	spawn(Vector2i(10, 8), 1, 3)
+func _spawn_armies() -> void:
+	# Joueur (bleu) — coin haut-gauche
+	spawn(Vector2i(1, 1), 0, Unit.Type.INFANTRY)
+	spawn(Vector2i(2, 3), 0, Unit.Type.INFANTRY)
+	spawn(Vector2i(1, 4), 0, Unit.Type.TANK)
+	spawn(Vector2i(0, 2), 0, Unit.Type.ARCHER)
 
-func spawn(cell: Vector2i, team: int, mp: int) -> Unit:
+	# IA (rouge) — coin bas-droit
+	spawn(Vector2i(10, 8), 1, Unit.Type.INFANTRY)
+	spawn(Vector2i(9, 6),  1, Unit.Type.INFANTRY)
+	spawn(Vector2i(10, 5), 1, Unit.Type.TANK)
+	spawn(Vector2i(11, 7), 1, Unit.Type.ARCHER)
+
+func spawn(cell: Vector2i, team: int, type: Unit.Type) -> Unit:
 	var u: Unit = _unit_scene.instantiate()
-	u.team = team
-	u.movement_points = mp
+	u.setup(type, team)
 	u.cell = cell
 	add_child(u)
 	u.position = to_local(map.to_global(map.map_to_local(cell)))
-	u.remaining_mp = mp
 	return u
 
 func get_unit_at(cell: Vector2i) -> Unit:
@@ -40,18 +44,23 @@ func get_unit_at(cell: Vector2i) -> Unit:
 	return null
 
 func show_reachable(unit: Unit) -> void:
-	var candidates: Dictionary = Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map)
+	var candidates: Dictionary = Pathfinder.get_reachable(
+			unit.cell, unit.remaining_mp, map, unit.type)
 	for child in get_children():
 		if child is Unit and child != unit:
 			candidates.erase((child as Unit).cell)
 	reachable_cells = candidates
 
-	# Cases adjacentes à la zone de mouvement mais hors portée : zone d'attaque exclusive
+	# Cases hors portée de mouvement mais dans la portée d'attaque
+	# depuis au moins une case atteignable : zone d'attaque exclusive
 	attack_cells.clear()
+	var r := unit.attack_range()
 	for cell: Vector2i in reachable_cells:
-		for nb in Pathfinder.get_neighbors(cell):
-			if not reachable_cells.has(nb) and map.is_in_bounds(nb):
-				attack_cells[nb] = true
+		for dx in range(-r, r + 1):
+			for dy in range(-r + abs(dx), r - abs(dx) + 1):
+				var target := cell + Vector2i(dx, dy)
+				if not reachable_cells.has(target) and map.is_in_bounds(target):
+					attack_cells[target] = true
 
 	_show_attack_zone = false
 	queue_redraw()
@@ -66,11 +75,17 @@ func clear_reachable() -> void:
 	_show_attack_zone = false
 	queue_redraw()
 
-func get_adjacent_enemies(unit: Unit) -> Array[Unit]:
+# Ennemis attaquables par `unit` depuis sa case (distance Manhattan <= portée)
+func get_enemies_in_range(unit: Unit) -> Array[Unit]:
 	var enemies: Array[Unit] = []
-	for nb in Pathfinder.get_neighbors(unit.cell):
-		var u := get_unit_at(nb)
-		if u != null and u.team != unit.team:
+	for child in get_children():
+		if not (child is Unit):
+			continue
+		var u := child as Unit
+		if u.team == unit.team:
+			continue
+		var d := Pathfinder.manhattan(unit.cell, u.cell)
+		if d >= 1 and d <= unit.attack_range():
 			enemies.append(u)
 	return enemies
 
@@ -78,9 +93,11 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 	if not is_instance_valid(attacker) or not is_instance_valid(defender):
 		return
 
-	var atk_dmg := maxi(1, BASE_DAMAGE - map.get_defense_bonus(defender.cell))
+	var dist := Pathfinder.manhattan(attacker.cell, defender.cell)
+	var atk_dmg := maxi(1, attacker.atk() - map.get_defense_bonus(defender.cell))
 	defender.hp -= atk_dmg
-	print("Attaque : -%d PV  →  défenseur à %d PV" % [atk_dmg, defender.hp])
+	print("%s attaque %s : -%d PV  →  défenseur à %d PV"
+			% [attacker.unit_name(), defender.unit_name(), atk_dmg, defender.hp])
 	defender.queue_redraw()
 
 	if defender.hp <= 0:
@@ -88,9 +105,13 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 		defender.queue_free()
 		return
 
-	# Contre-attaque pondérée par les PV restants du défenseur
+	# Contre-attaque : seulement si le défenseur a la portée pour riposter,
+	# pondérée par ses PV restants
+	if dist > defender.attack_range():
+		print("Pas de riposte (hors de portée)")
+		return
 	var ratio := defender.hp / float(defender.max_hp)
-	var def_dmg := maxi(1, roundi((COUNTER_DAMAGE - map.get_defense_bonus(attacker.cell)) * ratio))
+	var def_dmg := maxi(1, roundi((defender.counter_atk() - map.get_defense_bonus(attacker.cell)) * ratio))
 	attacker.hp -= def_dmg
 	print("Contre-attaque : -%d PV (ratio %.2f)  →  attaquant à %d PV" % [def_dmg, ratio, attacker.hp])
 	attacker.queue_redraw()
@@ -104,7 +125,7 @@ func reset_team(team: int) -> void:
 		if child is Unit and (child as Unit).team == team:
 			var u := child as Unit
 			u.has_moved = false
-			u.remaining_mp = u.movement_points
+			u.remaining_mp = u.movement_points()
 			u.queue_redraw()
 
 # cost = -1 → lu depuis reachable_cells (flow joueur)

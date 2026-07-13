@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32">
+  <polygon points="32,0.5 63,16 32,31.5 1,16" fill="#7ab850" stroke="#568a36" stroke-width="1.5"/>
+  <!-- bande de route reliant les cases voisines en +x / -x -->
+  <polygon points="10,11 22,5 54,21 42,27" fill="#b5a06e" stroke="#8f7d52" stroke-width="1"/>
+  <g fill="#9c8a5c">
+    <circle cx="24" cy="12" r="1.2"/>
+    <circle cx="34" cy="15" r="1"/>
+    <circle cx="42" cy="21" r="1.2"/>
+  </g>
+</svg>

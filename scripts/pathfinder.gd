@@ -2,8 +2,11 @@ class_name Pathfinder
 
 # Retourne un dict { Vector2i cell -> int cost } pour toutes les cases
 # atteignables depuis `start` avec `mp` points de mouvement.
+# Les coûts de terrain dépendent du type d'unité (Unit.STATS).
 # Dijkstra simplifié — cartes petites, pas besoin de priority queue.
-static func get_reachable(start: Vector2i, mp: int, map: GameMap) -> Dictionary:
+static func get_reachable(start: Vector2i, mp: int, map: GameMap,
+		unit_type: Unit.Type = Unit.Type.INFANTRY) -> Dictionary:
+	var costs: Dictionary = Unit.STATS[unit_type]["costs"]
 	var dist := { start: 0 }
 	var open: Array[Vector2i] = [start]
 
@@ -21,7 +24,7 @@ static func get_reachable(start: Vector2i, mp: int, map: GameMap) -> Dictionary:
 		for nb in get_neighbors(cell):
 			if not map.is_in_bounds(nb):
 				continue
-			var move_cost := map.get_movement_cost(nb)
+			var move_cost: int = costs.get(map.get_terrain(nb), 99)
 			if move_cost >= 99:
 				continue
 			var new_cost := cur_cost + move_cost
@@ -38,3 +41,6 @@ static func get_neighbors(cell: Vector2i) -> Array[Vector2i]:
 		cell + Vector2i( 0,  1),
 		cell + Vector2i( 0, -1),
 	]
+
+static func manhattan(a: Vector2i, b: Vector2i) -> int:
+	return abs(a.x - b.x) + abs(a.y - b.y)

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32">
+  <polygon points="32,0.5 63,16 32,31.5 1,16" fill="#4073d1" stroke="#2d54a0" stroke-width="1.5"/>
+  <g stroke="#7fa8e8" stroke-width="1.2" fill="none" stroke-linecap="round">
+    <path d="M18 13 q3 -2 6 0 q3 2 6 0"/>
+    <path d="M32 20 q3 -2 6 0 q3 2 6 0"/>
+    <path d="M24 24 q2.5 -1.8 5 0"/>
+    <path d="M38 9 q2.5 -1.8 5 0"/>
+  </g>
+</svg>

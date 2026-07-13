@@ -56,8 +56,7 @@ func _handle_click(cell: Vector2i) -> void:
 				_after_move()
 			else:
 				var clicked := units_layer.get_unit_at(cell)
-				if clicked != null and clicked.team != current_player \
-						and cell in Pathfinder.get_neighbors(selected_unit.cell):
+				if clicked != null and clicked in attackable_enemies:
 					var attacker := selected_unit
 					units_layer.do_combat(attacker, clicked)
 					if is_instance_valid(attacker):
@@ -88,21 +87,30 @@ func _select(unit: Unit) -> void:
 	unit.queue_redraw()
 	state = State.UNIT_SELECTED
 	units_layer.show_reachable(unit)
+	_mark_attackable(units_layer.get_enemies_in_range(unit))
 	attack_zone_btn.show()
 	attack_zone_btn.text = "Zone d'attaque"
 	_update_turn_label()
 
 func _after_move() -> void:
 	attack_zone_btn.hide()
-	attackable_enemies = units_layer.get_adjacent_enemies(selected_unit)
+	_mark_attackable(units_layer.get_enemies_in_range(selected_unit))
 	if attackable_enemies.is_empty():
 		_deselect()
 		return
+	state = State.UNIT_MOVED
+	_update_turn_label()
+
+# Remplace les anneaux rouges actuels par ceux des ennemis donnés
+func _mark_attackable(enemies: Array[Unit]) -> void:
+	for u: Unit in attackable_enemies:
+		if is_instance_valid(u):
+			u.attackable = false
+			u.queue_redraw()
+	attackable_enemies = enemies
 	for u: Unit in attackable_enemies:
 		u.attackable = true
 		u.queue_redraw()
-	state = State.UNIT_MOVED
-	_update_turn_label()
 
 func _deselect() -> void:
 	if is_instance_valid(selected_unit):
@@ -164,17 +172,17 @@ func _ai_act_unit(unit: Unit) -> void:
 		unit.queue_redraw()
 		return
 
-	# Attaque sur place si déjà adjacent
-	var adjacent := units_layer.get_adjacent_enemies(unit)
-	if not adjacent.is_empty():
-		units_layer.do_combat(unit, adjacent[0])
+	# Attaque sur place si déjà à portée
+	var in_range := units_layer.get_enemies_in_range(unit)
+	if not in_range.is_empty():
+		units_layer.do_combat(unit, in_range[0])
 		if is_instance_valid(unit):
 			unit.has_moved = true
 			unit.queue_redraw()
 		return
 
 	# Déplacement vers la cible
-	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map)
+	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map, unit.type)
 	var dest := AIPlayer.best_move_towards(unit, target.cell, reachable, units_layer)
 
 	if dest != unit.cell:
@@ -186,7 +194,7 @@ func _ai_act_unit(unit: Unit) -> void:
 
 	# Attaque après déplacement
 	if is_instance_valid(unit):
-		var enemies_after := units_layer.get_adjacent_enemies(unit)
+		var enemies_after := units_layer.get_enemies_in_range(unit)
 		if not enemies_after.is_empty():
 			units_layer.do_combat(unit, enemies_after[0])
 			if is_instance_valid(unit):
@@ -202,10 +210,13 @@ func _on_attack_zone_pressed() -> void:
 
 func _update_turn_label() -> void:
 	var player_names := ["Joueur 1 (Bleu)", "IA (Rouge)"]
+	var unit_label := ""
+	if is_instance_valid(selected_unit):
+		unit_label = selected_unit.unit_name()
 	var hints := {
 		State.IDLE:          "",
-		State.UNIT_SELECTED: " — Déplacer",
-		State.UNIT_MOVED:    " — Attaquer ou cliquer ailleurs",
+		State.UNIT_SELECTED: " — %s : déplacer ou attaquer" % unit_label,
+		State.UNIT_MOVED:    " — %s : attaquer ou cliquer ailleurs" % unit_label,
 	}
 	var suffix: String = " — Réflexion…" if ai_thinking else hints.get(state, "")
 	turn_label.text = player_names[current_player] + suffix

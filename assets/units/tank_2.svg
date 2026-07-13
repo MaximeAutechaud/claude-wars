@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+  <ellipse cx="16" cy="29" rx="13" ry="2.5" fill="#000000" opacity="0.25"/>
+  <!-- chenilles fixes -->
+  <rect x="3" y="21" width="26" height="7" rx="3.5" fill="#8a8a8a" stroke="#333333" stroke-width="1.2"/>
+  <circle cx="8" cy="24.5" r="1.6" fill="#3d3d3d"/>
+  <circle cx="13" cy="24.5" r="1.6" fill="#3d3d3d"/>
+  <circle cx="18" cy="24.5" r="1.6" fill="#3d3d3d"/>
+  <circle cx="23" cy="24.5" r="1.6" fill="#3d3d3d"/>
+  <!-- caisse et tourelle qui vibrent d'un pixel -->
+  <g transform="translate(0,1)">
+    <rect x="19" y="11" width="12" height="2.5" rx="1" fill="#bdbdbd" stroke="#333333" stroke-width="0.8"/>
+    <path d="M4 20 L7 14 h18 l3 6 z" fill="#ececec" stroke="#333333" stroke-width="1.2"/>
+    <rect x="10" y="8" width="11" height="7" rx="2.5" fill="#f6f6f6" stroke="#333333" stroke-width="1.2"/>
+  </g>
+</svg>
