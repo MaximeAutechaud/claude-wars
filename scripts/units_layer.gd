@@ -18,12 +18,14 @@ func _ready() -> void:
 
 func _spawn_armies() -> void:
 	# Joueur (bleu) — coin haut-gauche
+	spawn(Vector2i(1, 3), 0, Unit.Type.HERO)
 	spawn(Vector2i(1, 1), 0, Unit.Type.INFANTRY)
 	spawn(Vector2i(2, 3), 0, Unit.Type.INFANTRY)
 	spawn(Vector2i(1, 4), 0, Unit.Type.TANK)
 	spawn(Vector2i(0, 2), 0, Unit.Type.ARCHER)
 
 	# IA (rouge) — coin bas-droit
+	spawn(Vector2i(10, 6), 1, Unit.Type.HERO)
 	spawn(Vector2i(10, 8), 1, Unit.Type.INFANTRY)
 	spawn(Vector2i(9, 6),  1, Unit.Type.INFANTRY)
 	spawn(Vector2i(10, 5), 1, Unit.Type.TANK)
@@ -36,6 +38,21 @@ func spawn(cell: Vector2i, team: int, type: Unit.Type) -> Unit:
 	add_child(u)
 	u.position = to_local(map.to_global(map.map_to_local(cell)))
 	return u
+
+# Héros vivant d'une équipe, ou null s'il est mort
+func get_hero(team: int) -> Unit:
+	for child in get_children():
+		if child is Unit and not child.is_queued_for_deletion():
+			var u := child as Unit
+			if u.team == team and u.is_hero():
+				return u
+	return null
+
+# XP au héros du camp du tueur : 2 s'il a tué lui-même, 1 sinon
+func _award_kill_xp(killer: Unit) -> void:
+	var hero := get_hero(killer.team)
+	if hero != null:
+		hero.add_xp(2 if killer == hero else 1)
 
 # Unités vivantes d'une équipe (ignore celles en cours de suppression)
 func count_team(team: int) -> int:
@@ -120,6 +137,7 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 	if defender.hp <= 0:
 		print("Défenseur éliminé !")
 		defender.queue_free()
+		_award_kill_xp(attacker)
 		return
 
 	# Contre-attaque : seulement si le défenseur a la portée pour riposter,
@@ -136,6 +154,7 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 	if attacker.hp <= 0:
 		print("Attaquant éliminé !")
 		attacker.queue_free()
+		_award_kill_xp(defender)
 
 func reset_team(team: int) -> void:
 	for child in get_children():

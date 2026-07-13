@@ -99,7 +99,12 @@ Chaque phase doit laisser un jeu jouable.
 - [x] **Phase 1** — cœur tactique : carte iso, terrains, déplacement (Dijkstra), combat, IA simple
 - [x] **Phase 2** — types d'unités (Infanterie/Char/Archer), portée, visuels SVG, idle 2 frames
 - [x] **Phase 3** — conditions de victoire/défaite : élimination + écran de fin, compteur de tours
-- [ ] **Phase 4** — héros : unité unique par camp, victoire par assassinat, XP, +stats par niveau
+- [x] **Phase 4** — héros : unité unique par camp, victoire par assassinat, XP
+	  (+2 kill du héros / +1 kill allié, paliers 2/5/9/14, cap niv. 5,
+	  +4 PV max +1 atk +1 riposte par niveau). IA : cible le héros adverse en
+	  priorité ; son héros joue en commandant — il agit après son armée, escorte
+	  sans venir au contact, ne frappe que pour achever une cible, replie sous
+	  40 % de PV, et ne se bat en première ligne que s'il est seul
 - [ ] **Phase 5** — économie : villages capturables, or, recrutement autour du héros
 - [ ] **Phase 6** — compétences de héros (une active par niveau, choix entre deux)
 - [ ] **Phase 7** — creeps neutres et récompenses
@@ -114,5 +119,7 @@ Godot 4.7, GDScript, rendu GL Compatibility. Carte 12×10 **hexagonale**
 (coûts de mouvement par type d'unité, bonus de défense), 3 types d'unités avec
 portée et riposte conditionnelle, IA qui garde ses distances avec les unités à
 portée, sprites SVG maison teintés par équipe, animation d'idle 2 frames.
-Victoire/défaite par élimination avec écran de fin et compteur de tours.
-Prochaine brique : le héros (phase 4).
+Héros par camp (20 PV, XP partagée façon WC3, niveaux avec pips et barre d'XP) ;
+victoire par assassinat du héros adverse (l'élimination totale reste une
+condition secondaire), écran de fin, compteur de tours.
+Prochaine brique : villages, or et recrutement (phase 5).

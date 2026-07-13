@@ -1,29 +1,28 @@
-[gd_scene load_steps=5 format=3 uid="uid://dcwmain0001ab"]
+[gd_scene format=3 uid="uid://dcwmain0001ab"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="Script" path="res://scripts/game_map.gd" id="2_gmap"]
-[ext_resource type="Script" path="res://scripts/units_layer.gd" id="3_ulayer"]
-[ext_resource type="Script" path="res://scripts/cursor.gd" id="4_cursor"]
+[ext_resource type="Script" uid="uid://ci7qnqvcblil5" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://7ad3vbey2wnc" path="res://scripts/game_map.gd" id="2_gmap"]
+[ext_resource type="Script" uid="uid://d3hv241rb7qxe" path="res://scripts/units_layer.gd" id="3_ulayer"]
+[ext_resource type="Script" uid="uid://c4v0gpsvkyehu" path="res://scripts/cursor.gd" id="4_cursor"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=2039044375]
 script = ExtResource("1_main")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(1.0, 1.0)
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2060979787]
 
-[node name="GameMap" type="TileMapLayer" parent="."]
-script = ExtResource("2_gmap")
+[node name="GameMap" type="TileMapLayer" parent="." unique_id=343510386]
 y_sort_enabled = true
+script = ExtResource("2_gmap")
 
-[node name="UnitsLayer" type="Node2D" parent="."]
+[node name="UnitsLayer" type="Node2D" parent="." unique_id=1833406536]
 script = ExtResource("3_ulayer")
 
-[node name="Cursor" type="Node2D" parent="."]
+[node name="Cursor" type="Node2D" parent="." unique_id=857954790]
 script = ExtResource("4_cursor")
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=787586178]
 
-[node name="TurnLabel" type="Label" parent="UI"]
+[node name="TurnLabel" type="Label" parent="UI" unique_id=207125880]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -31,48 +30,48 @@ offset_left = -220.0
 offset_right = 220.0
 offset_bottom = 36.0
 theme_override_font_sizes/font_size = 18
-horizontal_alignment = 1
 text = "Joueur 1 (Bleu)"
+horizontal_alignment = 1
 
-[node name="AttackZoneButton" type="Button" parent="UI"]
-anchors_preset = 8
+[node name="AttackZoneButton" type="Button" parent="UI" unique_id=956179967]
+visible = false
+anchors_preset = 7
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -110.0
-offset_right = 110.0
 offset_top = -52.0
+offset_right = 110.0
 offset_bottom = -12.0
-visible = false
 text = "Zone d'attaque"
 
-[node name="EndTurnButton" type="Button" parent="UI"]
-anchors_preset = 3
+[node name="EndTurnButton" type="Button" parent="UI" unique_id=1288070812]
+anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-anchor_bottom = 0.0
 offset_left = -160.0
-offset_right = -10.0
 offset_top = 10.0
+offset_right = -10.0
 offset_bottom = 42.0
 text = "Fin de tour  [Entrée]"
 
-[node name="CoordLabel" type="Label" parent="UI"]
-offset_right = 160.0
+[node name="CoordLabel" type="Label" parent="UI" unique_id=1472159511]
 offset_top = 40.0
+offset_right = 160.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 16
 text = "(-, -)"
 
-[node name="EndScreen" type="ColorRect" parent="UI"]
+[node name="EndScreen" type="ColorRect" parent="UI" unique_id=1072770120]
 visible = false
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0, 0, 0, 0.55)
 
-[node name="EndBox" type="VBoxContainer" parent="UI/EndScreen"]
-anchors_preset = 8
+[node name="EndBox" type="VBoxContainer" parent="UI/EndScreen" unique_id=1085785440]
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -84,13 +83,13 @@ offset_bottom = 70.0
 theme_override_constants/separation = 24
 alignment = 1
 
-[node name="EndLabel" type="Label" parent="UI/EndScreen/EndBox"]
+[node name="EndLabel" type="Label" parent="UI/EndScreen/EndBox" unique_id=1189373164]
 layout_mode = 2
 theme_override_font_sizes/font_size = 44
-horizontal_alignment = 1
 text = "Victoire !"
+horizontal_alignment = 1
 
-[node name="RestartButton" type="Button" parent="UI/EndScreen/EndBox"]
+[node name="RestartButton" type="Button" parent="UI/EndScreen/EndBox" unique_id=863634201]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "  Rejouer  "

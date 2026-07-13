@@ -1,7 +1,7 @@
 class_name Unit
 extends Node2D
 
-enum Type { INFANTRY, TANK, ARCHER }
+enum Type { INFANTRY, TANK, ARCHER, HERO }
 
 const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30)]
 
@@ -33,7 +33,22 @@ const STATS: Dictionary = {
 			GameMap.Terrain.RIVER: 99,
 		},
 	},
+	Type.HERO: {
+		"name": "Héros", "max_hp": 20, "mp": 4, "atk": 5, "counter": 4, "range": 1,
+		"costs": {
+			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
+			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
+			GameMap.Terrain.RIVER: 99,
+		},
+	},
 }
+
+# ── Progression du héros ─────────────────────────────────────────────────────
+# XP cumulée requise pour atteindre les niveaux 2, 3, 4, 5 (cap)
+const XP_THRESHOLDS := [2, 5, 9, 14]
+const MAX_LEVEL := 5
+const LEVELUP_HP := 4
+const LEVELUP_ATK := 1
 
 # Deux frames d'idle par type, alternées en continu (style Advance Wars)
 const TEXTURES: Dictionary = {
@@ -48,6 +63,10 @@ const TEXTURES: Dictionary = {
 	Type.ARCHER: [
 		preload("res://assets/units/archer.svg"),
 		preload("res://assets/units/archer_2.svg"),
+	],
+	Type.HERO: [
+		preload("res://assets/units/hero.svg"),
+		preload("res://assets/units/hero_2.svg"),
 	],
 }
 
@@ -67,6 +86,12 @@ var remaining_mp := 0
 var hp:     int = 10
 var max_hp: int = 10
 
+# Progression (héros uniquement)
+var xp    := 0
+var level := 1
+var _atk_bonus     := 0
+var _counter_bonus := 0
+
 func setup(p_type: Type, p_team: int) -> void:
 	type = p_type
 	team = p_team
@@ -75,16 +100,41 @@ func setup(p_type: Type, p_team: int) -> void:
 	remaining_mp = movement_points()
 
 func unit_name() -> String:
+	if type == Type.HERO:
+		return "Héros niv. %d" % level
 	return STATS[type]["name"]
+
+func is_hero() -> bool:
+	return type == Type.HERO
 
 func movement_points() -> int:
 	return STATS[type]["mp"]
 
 func atk() -> int:
-	return STATS[type]["atk"]
+	return STATS[type]["atk"] + _atk_bonus
 
 func counter_atk() -> int:
-	return STATS[type]["counter"]
+	return STATS[type]["counter"] + _counter_bonus
+
+func add_xp(amount: int) -> void:
+	if type != Type.HERO:
+		return
+	xp += amount
+	while level < MAX_LEVEL and xp >= XP_THRESHOLDS[level - 1]:
+		level += 1
+		max_hp += LEVELUP_HP
+		hp = mini(hp + LEVELUP_HP, max_hp)
+		_atk_bonus += LEVELUP_ATK
+		_counter_bonus += LEVELUP_ATK
+		print("%s ! (+%d PV max, +%d atk)" % [unit_name(), LEVELUP_HP, LEVELUP_ATK])
+		_level_up_flash()
+	queue_redraw()
+
+func _level_up_flash() -> void:
+	var tw := create_tween()
+	tw.tween_property(self, "scale", Vector2(1.45, 1.45), 0.15) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.25)
 
 func attack_range() -> int:
 	return STATS[type]["range"]
@@ -124,6 +174,19 @@ func _draw() -> void:
 	var by := 9.0
 	draw_rect(Rect2(-bw * 0.5, by, bw, bh), Color(0.35, 0.0, 0.0))
 	draw_rect(Rect2(-bw * 0.5, by, bw * hp / float(max_hp), bh), Color(0.15, 0.85, 0.2))
+
+	if type == Type.HERO:
+		# Barre d'XP dorée sous la barre de PV
+		var frac := 1.0
+		if level < MAX_LEVEL:
+			var prev: int = 0 if level == 1 else XP_THRESHOLDS[level - 2]
+			var next_xp: int = XP_THRESHOLDS[level - 1]
+			frac = clampf((xp - prev) / float(next_xp - prev), 0.0, 1.0)
+		draw_rect(Rect2(-bw * 0.5, by + bh + 1, bw, 2.0), Color(0.25, 0.2, 0.05))
+		draw_rect(Rect2(-bw * 0.5, by + bh + 1, bw * frac, 2.0), Color(1.0, 0.82, 0.15))
+		# Pips de niveau au-dessus du sprite
+		for i in level - 1:
+			draw_rect(Rect2(-10.0 + i * 5.5, -27.0, 3.5, 3.5), Color(1.0, 0.82, 0.15))
 
 func _draw_cell_outline(hw: float, hh: float, color: Color, width: float) -> void:
 	var pts := GameMap.hex_corners(Vector2.ZERO, hw, hh)
