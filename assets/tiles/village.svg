@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+  <ellipse cx="16" cy="29" rx="12" ry="2.5" fill="#000000" opacity="0.2"/>
+  <!-- murs -->
+  <rect x="7" y="15" width="18" height="13" fill="#d9c9a3" stroke="#6e5c3f" stroke-width="1.2"/>
+  <!-- toit -->
+  <polygon points="16,4 28,16 4,16" fill="#a5502e" stroke="#6e3a1e" stroke-width="1.2"/>
+  <!-- porte et fenêtre -->
+  <rect x="13.5" y="20" width="5" height="8" fill="#7a5c38" stroke="#573f24" stroke-width="1"/>
+  <rect x="20.5" y="18" width="3.5" height="3.5" fill="#9cc7e8" stroke="#573f24" stroke-width="0.8"/>
+</svg>

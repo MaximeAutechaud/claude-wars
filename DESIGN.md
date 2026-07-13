@@ -112,7 +112,13 @@ Chaque phase doit laisser un jeu jouable.
 	  priorité ; son héros joue en commandant — il agit après son armée, escorte
 	  sans venir au contact, ne frappe que pour achever une cible, replie sous
 	  40 % de PV, et ne se bat en première ligne que s'il est seul
-- [ ] **Phase 5** — économie : villages capturables, or, recrutement autour du héros
+- [x] **Phase 5** — économie : 5 villages (capture instantanée par les unités à
+	  pied uniquement, +2 or/tour chacun, soin +3 en y stationnant), or de
+	  départ 10, recrutement sur case libre adjacente au héros sans consommer
+	  son action (recrue épuisée le tour même). **Unités chères et rares**
+	  (choix user, prérequis de la vétérance) : Infanterie 12, Archer 16,
+	  Char 24, pas de revenu de base. IA : recrute le type le moins représenté,
+	  capture les villages à portée, or visible des deux camps
 - [x] **Phase 6** — compétences de héros (avancée avant la phase 5) : pool de
 	  4 sorts (Soin, Boule de feu avec friendly fire, Bond, Cri de guerre),
 	  choix entre 2 sorts à chaque level-up, 1 sort/tour, Bond et Cri gratuits,

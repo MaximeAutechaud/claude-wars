@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://7ad3vbey2wnc" path="res://scripts/game_map.gd" id="2_gmap"]
 [ext_resource type="Script" uid="uid://d3hv241rb7qxe" path="res://scripts/units_layer.gd" id="3_ulayer"]
 [ext_resource type="Script" uid="uid://c4v0gpsvkyehu" path="res://scripts/cursor.gd" id="4_cursor"]
+[ext_resource type="Script" path="res://scripts/villages.gd" id="5_villages"]
 
 [node name="Main" type="Node2D" unique_id=2039044375]
 script = ExtResource("1_main")
@@ -13,6 +14,9 @@ script = ExtResource("1_main")
 [node name="GameMap" type="TileMapLayer" parent="." unique_id=343510386]
 y_sort_enabled = true
 script = ExtResource("2_gmap")
+
+[node name="Villages" type="Node2D" parent="."]
+script = ExtResource("5_villages")
 
 [node name="UnitsLayer" type="Node2D" parent="." unique_id=1833406536]
 script = ExtResource("3_ulayer")
@@ -62,6 +66,41 @@ offset_right = 160.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 16
 text = "(-, -)"
+
+[node name="GoldLabel" type="Label" parent="UI"]
+offset_top = 72.0
+offset_right = 220.0
+offset_bottom = 100.0
+theme_override_font_sizes/font_size = 16
+text = "Or : 10   |   IA : 10"
+
+[node name="RecruitButton" type="Button" parent="UI"]
+visible = false
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 120.0
+offset_top = -52.0
+offset_right = 280.0
+offset_bottom = -12.0
+text = "Recruter"
+
+[node name="RecruitPanel" type="PanelContainer" parent="UI"]
+visible = false
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = -60.0
+
+[node name="RecruitBox" type="HBoxContainer" parent="UI/RecruitPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
 
 [node name="SpellBar" type="HBoxContainer" parent="UI"]
 visible = false

@@ -2,6 +2,7 @@ class_name UnitsLayer
 extends Node2D
 
 @onready var map: GameMap = $"../GameMap"
+@onready var villages: Villages = get_node_or_null("../Villages")
 
 var reachable_cells: Dictionary = {}
 var attack_cells: Dictionary = {}   # cases hors portée de mouvement mais attaquables
@@ -142,6 +143,8 @@ func cast_spell(caster: Unit, id: String, target_cell: Vector2i) -> void:
 		"blink":
 			caster.cell = target_cell
 			caster.position = to_local(map.to_global(map.map_to_local(target_cell)))
+			if villages:
+				villages.try_capture(caster)
 		"warcry":
 			for cell in Pathfinder.cells_in_range(caster.cell, Spells.WARCRY_RADIUS):
 				var u := get_unit_at(cell)
@@ -220,6 +223,8 @@ func move_unit(unit: Unit, target: Vector2i, cost: int = -1) -> void:
 	unit.has_moved = (unit.remaining_mp == 0)
 	unit.position = to_local(map.to_global(map.map_to_local(target)))
 	unit.queue_redraw()
+	if villages:
+		villages.try_capture(unit)
 	clear_reachable()
 
 func _draw() -> void:

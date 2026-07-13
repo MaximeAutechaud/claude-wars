@@ -1,10 +1,11 @@
 extends Node2D
 
-enum State { IDLE, UNIT_SELECTED, UNIT_MOVED, CASTING }
+enum State { IDLE, UNIT_SELECTED, UNIT_MOVED, CASTING, RECRUITING }
 
 const AI_TEAM := 1
 
 @onready var map: GameMap            = $GameMap
+@onready var villages: Villages      = $Villages
 @onready var camera: Camera2D        = $Camera2D
 @onready var units_layer: UnitsLayer = $UnitsLayer
 @onready var turn_label: Label       = $UI/TurnLabel
@@ -12,6 +13,10 @@ const AI_TEAM := 1
 @onready var end_turn_btn: Button    = $UI/EndTurnButton
 @onready var end_screen: ColorRect   = $UI/EndScreen
 @onready var end_label: Label        = $UI/EndScreen/EndBox/EndLabel
+@onready var gold_label: Label            = $UI/GoldLabel
+@onready var recruit_btn: Button          = $UI/RecruitButton
+@onready var recruit_panel: PanelContainer = $UI/RecruitPanel
+@onready var recruit_box: HBoxContainer   = $UI/RecruitPanel/RecruitBox
 @onready var spell_bar: HBoxContainer     = $UI/SpellBar
 @onready var level_up_panel: PanelContainer = $UI/LevelUpPanel
 @onready var choice_btns: Array[Button] = [
@@ -28,12 +33,16 @@ var game_over      := false
 var turn_count     := 1
 var casting_spell  := ""
 var _offered_spells: Array[String] = []
+var gold: Array[int] = [10, 10]
+var recruiting_type: int = -1
 
 func _ready() -> void:
 	var mid := map.get_map_size() / 2
 	camera.global_position = map.to_global(map.map_to_local(mid))
 	for i in choice_btns.size():
 		choice_btns[i].pressed.connect(_on_spell_choice.bind(i))
+	recruit_btn.pressed.connect(_on_recruit_pressed)
+	_start_turn(0)
 	_update_turn_label()
 
 # ── Entrées ──────────────────────────────────────────────────────────────────
@@ -105,6 +114,12 @@ func _handle_click(cell: Vector2i) -> void:
 			else:
 				_deselect()
 
+		State.RECRUITING:
+			if units_layer.spell_cells.has(cell):
+				_execute_recruit(cell)
+			else:
+				_deselect()
+
 # ── Transitions d'état ───────────────────────────────────────────────────────
 
 func _select(unit: Unit) -> void:
@@ -117,6 +132,7 @@ func _select(unit: Unit) -> void:
 	attack_zone_btn.show()
 	attack_zone_btn.text = "Zone d'attaque"
 	_update_spell_bar()
+	_update_recruit_button()
 	_update_turn_label()
 
 func _after_move() -> void:
@@ -129,7 +145,20 @@ func _after_move() -> void:
 		return
 	state = State.UNIT_MOVED
 	_update_spell_bar()
+	_update_recruit_button()
 	_update_turn_label()
+
+# Re-sélectionne une unité après une action gratuite (sort, recrutement)
+func _reselect(unit: Unit) -> void:
+	if not is_instance_valid(unit) or game_over:
+		return
+	if unit.has_moved:
+		selected_unit = unit
+		unit.selected = true
+		unit.queue_redraw()
+		_after_move()
+	else:
+		_select(unit)
 
 # Remplace les anneaux rouges actuels par ceux des ennemis donnés
 func _mark_attackable(enemies: Array[Unit]) -> void:
@@ -154,9 +183,12 @@ func _deselect() -> void:
 	selected_unit = null
 	state = State.IDLE
 	casting_spell = ""
+	recruiting_type = -1
 	units_layer.clear_reachable()
 	attack_zone_btn.hide()
 	spell_bar.hide()
+	recruit_btn.hide()
+	recruit_panel.hide()
 	_update_turn_label()
 
 func _end_turn() -> void:
@@ -168,10 +200,25 @@ func _end_turn() -> void:
 	if current_player == 0:
 		turn_count += 1
 	_update_turn_label()
+	_start_turn(current_player)
 	if current_player == AI_TEAM:
 		_run_ai_turn()  # coroutine lancée en arrière-plan
 	else:
 		_maybe_show_levelup()
+
+# Début de tour d'un camp : revenu des villages + soin des unités qui y stationnent
+func _start_turn(team: int) -> void:
+	gold[team] += villages.income_for(team)
+	for child in units_layer.get_children():
+		if child is Unit and (child as Unit).team == team:
+			var u := child as Unit
+			if villages.owner_of(u.cell) == team and u.hp < u.max_hp:
+				u.hp = mini(u.hp + Villages.VILLAGE_HEAL, u.max_hp)
+				u.queue_redraw()
+	_update_gold_label()
+
+func _update_gold_label() -> void:
+	gold_label.text = "Or : %d   |   IA : %d" % [gold[0], gold[AI_TEAM]]
 
 # ── Fin de partie ────────────────────────────────────────────────────────────
 
@@ -264,15 +311,58 @@ func _execute_cast(target_cell: Vector2i, id: String = "") -> void:
 	if game_over:
 		return
 	# Sort gratuit : le héros garde son attaque, on le re-sélectionne
-	if free_action and is_instance_valid(caster):
-		if caster.has_moved:
-			selected_unit = caster
-			caster.selected = true
-			caster.queue_redraw()
-			_after_move()
-		else:
-			_select(caster)
+	if free_action:
+		_reselect(caster)
 	_maybe_show_levelup()
+
+# ── Recrutement ──────────────────────────────────────────────────────────────
+
+func _update_recruit_button() -> void:
+	recruit_btn.visible = selected_unit != null and selected_unit.is_hero() \
+			and selected_unit.team == 0
+
+func _on_recruit_pressed() -> void:
+	if recruit_panel.visible:
+		recruit_panel.hide()
+		return
+	for child in recruit_box.get_children():
+		child.queue_free()
+	for t: int in [Unit.Type.INFANTRY, Unit.Type.ARCHER, Unit.Type.TANK]:
+		var btn := Button.new()
+		var cost: int = Unit.STATS[t]["cost"]
+		btn.text = "%s — %d or" % [Unit.STATS[t]["name"], cost]
+		btn.disabled = gold[0] < cost or _free_adjacent_cells(selected_unit.cell, t).is_empty()
+		btn.pressed.connect(_on_recruit_type.bind(t))
+		recruit_box.add_child(btn)
+	recruit_panel.show()
+
+func _on_recruit_type(type: int) -> void:
+	recruit_panel.hide()
+	recruiting_type = type
+	state = State.RECRUITING
+	units_layer.show_spell_targets(_free_adjacent_cells(selected_unit.cell, type))
+	_update_turn_label()
+
+func _execute_recruit(cell: Vector2i) -> void:
+	var hero := selected_unit
+	var u := units_layer.spawn(cell, 0, recruiting_type)
+	u.has_moved = true
+	u.queue_redraw()
+	gold[0] -= Unit.STATS[recruiting_type]["cost"]
+	villages.try_capture(u)
+	print("%s recruté pour %d or" % [u.unit_name(), Unit.STATS[recruiting_type]["cost"]])
+	_update_gold_label()
+	_deselect()
+	_reselect(hero)   # recruter ne consomme pas l'action du héros
+
+# Cases libres adjacentes où le type demandé peut se tenir
+func _free_adjacent_cells(origin: Vector2i, type: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for nb in Pathfinder.get_neighbors(origin):
+		if map.is_in_bounds(nb) and units_layer.get_unit_at(nb) == null \
+				and Unit.STATS[type]["costs"].get(map.get_terrain(nb), 99) < 99:
+			out.append(nb)
+	return out
 
 # ── Choix de sort au level-up ────────────────────────────────────────────────
 
@@ -336,6 +426,7 @@ func _run_ai_turn() -> void:
 			ai_hero.learned_spells.append(pool[0])
 			ai_hero.pending_levelups -= 1
 			print("IA apprend : %s" % Spells.POOL[pool[0]]["name"])
+		_ai_recruit(ai_hero)
 
 	for unit: Unit in ai_units:
 		if not is_instance_valid(unit) or unit.has_moved:
@@ -374,8 +465,23 @@ func _ai_act_unit(unit: Unit) -> void:
 			unit.queue_redraw()
 		return
 
-	# Déplacement vers la cible
 	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map, unit.type)
+
+	# Village capturable à portée de déplacement : priorité territoriale
+	if unit.can_capture():
+		var vcell := AIPlayer.nearest_capturable_village(unit, reachable, villages, units_layer)
+		if vcell != Vector2i(-99, -99):
+			units_layer.move_unit(unit, vcell, reachable.get(vcell, 0))
+			if is_instance_valid(unit):
+				var after_cap := units_layer.get_enemies_in_range(unit)
+				if not after_cap.is_empty():
+					units_layer.do_combat(unit, AIPlayer.pick_attack_target(after_cap))
+				if is_instance_valid(unit):
+					unit.has_moved = true
+					unit.queue_redraw()
+			return
+
+	# Déplacement vers la cible
 	var dest := AIPlayer.best_move_towards(unit, target.cell, reachable, units_layer)
 
 	if dest != unit.cell:
@@ -393,6 +499,23 @@ func _ai_act_unit(unit: Unit) -> void:
 			if is_instance_valid(unit):
 				unit.has_moved = true
 				unit.queue_redraw()
+
+# L'IA recrute autour de son héros : le type le moins représenté qu'elle peut payer
+func _ai_recruit(hero: Unit) -> void:
+	while true:
+		var type := AIPlayer.pick_recruit(units_layer, AI_TEAM, gold[AI_TEAM])
+		if type == -1:
+			break
+		var free := _free_adjacent_cells(hero.cell, type)
+		if free.is_empty():
+			break
+		var u := units_layer.spawn(free[0], AI_TEAM, type)
+		u.has_moved = true
+		u.queue_redraw()
+		gold[AI_TEAM] -= Unit.STATS[type]["cost"]
+		villages.try_capture(u)
+		print("IA recrute : %s" % u.unit_name())
+	_update_gold_label()
 
 # Héros IA en mode commandant : il ne mène jamais la charge.
 # 1. PV bas → repli. 2. Cible achevable à portée → il prend le kill (sans
@@ -465,6 +588,7 @@ func _update_turn_label() -> void:
 		State.UNIT_SELECTED: " — %s : déplacer ou attaquer" % unit_label,
 		State.UNIT_MOVED:    " — %s : attaquer ou cliquer ailleurs" % unit_label,
 		State.CASTING:       " — %s : choisir la cible" % spell_name,
+		State.RECRUITING:    " — Recrutement : choisir la case",
 	}
 	var suffix: String = " — Réflexion…" if ai_thinking else hints.get(state, "")
 	turn_label.text = "Tour %d — %s%s" % [turn_count, player_names[current_player], suffix]

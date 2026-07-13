@@ -22,6 +22,41 @@ static func find_nearest_enemy(unit: Unit, units_layer: UnitsLayer) -> Unit:
 # distances, une unité de mêlée vient au contact). À écart de portée égal,
 # préfère la case la plus éloignée (plus sûre).
 # Évite les cases déjà occupées par une autre unité.
+# Type à recruter : le moins représenté dans l'armée, puis le moins cher.
+# -1 si rien d'abordable.
+static func pick_recruit(units_layer: UnitsLayer, team: int, gold: int) -> int:
+	var counts := {Unit.Type.INFANTRY: 0, Unit.Type.ARCHER: 0, Unit.Type.TANK: 0}
+	for child in units_layer.get_children():
+		if child is Unit and (child as Unit).team == team \
+				and counts.has((child as Unit).type):
+			counts[(child as Unit).type] += 1
+	var order: Array = counts.keys()
+	order.sort_custom(func(a, b) -> bool:
+		if counts[a] != counts[b]:
+			return counts[a] < counts[b]
+		return Unit.STATS[a]["cost"] < Unit.STATS[b]["cost"])
+	for t: int in order:
+		if gold >= Unit.STATS[t]["cost"]:
+			return t
+	return -1
+
+# Village neutre/ennemi libre le moins coûteux à atteindre, ou (-99,-99)
+static func nearest_capturable_village(unit: Unit, reachable: Dictionary,
+		villages: Villages, units_layer: UnitsLayer) -> Vector2i:
+	var best := Vector2i(-99, -99)
+	var best_cost := 999
+	for cell: Vector2i in reachable:
+		if cell == unit.cell:
+			continue
+		if not villages.is_village(cell) or villages.owner_of(cell) == unit.team:
+			continue
+		if units_layer.get_unit_at(cell) != null:
+			continue
+		if reachable[cell] < best_cost:
+			best_cost = reachable[cell]
+			best = cell
+	return best
+
 # Choisit la cible d'attaque : le héros adverse en priorité, sinon la plus faible
 static func pick_attack_target(candidates: Array[Unit]) -> Unit:
 	var best: Unit = candidates[0]

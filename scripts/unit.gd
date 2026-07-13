@@ -11,6 +11,7 @@ const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30)]
 const STATS: Dictionary = {
 	Type.INFANTRY: {
 		"name": "Infanterie", "max_hp": 10, "mp": 3, "atk": 3, "counter": 2, "range": 1,
+		"cost": 12,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
 			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
@@ -19,6 +20,7 @@ const STATS: Dictionary = {
 	},
 	Type.TANK: {
 		"name": "Char", "max_hp": 14, "mp": 5, "atk": 5, "counter": 3, "range": 1,
+		"cost": 24,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
 			GameMap.Terrain.MOUNTAIN: 99, GameMap.Terrain.ROAD: 1,
@@ -27,6 +29,7 @@ const STATS: Dictionary = {
 	},
 	Type.ARCHER: {
 		"name": "Archer", "max_hp": 8, "mp": 3, "atk": 3, "counter": 1, "range": 2,
+		"cost": 16,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
 			GameMap.Terrain.MOUNTAIN: 3, GameMap.Terrain.ROAD: 1,
@@ -35,6 +38,7 @@ const STATS: Dictionary = {
 	},
 	Type.HERO: {
 		"name": "Héros", "max_hp": 20, "mp": 4, "atk": 5, "counter": 4, "range": 1,
+		"cost": 0,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
 			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
@@ -113,6 +117,10 @@ func unit_name() -> String:
 
 func is_hero() -> bool:
 	return type == Type.HERO
+
+# Seules les unités à pied capturent les villages
+func can_capture() -> bool:
+	return type != Type.TANK
 
 func movement_points() -> int:
 	return STATS[type]["mp"]
