@@ -92,6 +92,13 @@ var level := 1
 var _atk_bonus     := 0
 var _counter_bonus := 0
 
+# Sorts (héros uniquement)
+var learned_spells: Array[String] = []
+var cooldowns: Dictionary = {}        # spell_id -> tours restants
+var has_cast := false                 # un seul sort par tour
+var pending_levelups := 0             # choix de sort en attente
+var temp_atk_bonus := 0               # buff Cri de guerre, remis à 0 à son tour
+
 func setup(p_type: Type, p_team: int) -> void:
 	type = p_type
 	team = p_team
@@ -111,7 +118,23 @@ func movement_points() -> int:
 	return STATS[type]["mp"]
 
 func atk() -> int:
-	return STATS[type]["atk"] + _atk_bonus
+	return STATS[type]["atk"] + _atk_bonus + temp_atk_bonus
+
+func spell_ready(id: String) -> bool:
+	return not has_cast and learned_spells.has(id) and cooldowns.get(id, 0) == 0
+
+func has_ready_spell() -> bool:
+	for id in learned_spells:
+		if spell_ready(id):
+			return true
+	return false
+
+func unlearned_spells() -> Array[String]:
+	var out: Array[String] = []
+	for id in Spells.POOL:
+		if not learned_spells.has(id):
+			out.append(id)
+	return out
 
 func counter_atk() -> int:
 	return STATS[type]["counter"] + _counter_bonus
@@ -126,6 +149,7 @@ func add_xp(amount: int) -> void:
 		hp = mini(hp + LEVELUP_HP, max_hp)
 		_atk_bonus += LEVELUP_ATK
 		_counter_bonus += LEVELUP_ATK
+		pending_levelups += 1
 		print("%s ! (+%d PV max, +%d atk)" % [unit_name(), LEVELUP_HP, LEVELUP_ATK])
 		_level_up_flash()
 	queue_redraw()

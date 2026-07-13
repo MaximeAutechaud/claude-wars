@@ -72,6 +72,27 @@ static func _nearest_ally_dist(cell: Vector2i, unit: Unit,
 			best = mini(best, Pathfinder.distance(cell, (child as Unit).cell))
 	return float(best) if best < 999999 else 0.0
 
+# Meilleur centre de boule de feu : >= 2 ennemis touchés, aucun allié.
+# Renvoie (-99,-99) si aucun centre valable.
+static func best_fireball_center(caster: Unit, units_layer: UnitsLayer) -> Vector2i:
+	var best := Vector2i(-99, -99)
+	var best_hits := 1
+	for center in Pathfinder.cells_in_range(caster.cell, Spells.POOL["fireball"]["range"]):
+		var enemies := 0
+		var allies := 0
+		for cell in Pathfinder.cells_in_range(center, Spells.FIREBALL_RADIUS):
+			var u := units_layer.get_unit_at(cell)
+			if u == null:
+				continue
+			if u.team == caster.team:
+				allies += 1
+			else:
+				enemies += 1
+		if allies == 0 and enemies > best_hits:
+			best_hits = enemies
+			best = center
+	return best
+
 # Case atteignable maximisant la distance à l'ennemi le plus proche (repli)
 static func best_retreat(unit: Unit, reachable: Dictionary,
 		units_layer: UnitsLayer) -> Vector2i:

@@ -1,6 +1,6 @@
 extends Node2D
 
-enum State { IDLE, UNIT_SELECTED, UNIT_MOVED }
+enum State { IDLE, UNIT_SELECTED, UNIT_MOVED, CASTING }
 
 const AI_TEAM := 1
 
@@ -12,6 +12,12 @@ const AI_TEAM := 1
 @onready var end_turn_btn: Button    = $UI/EndTurnButton
 @onready var end_screen: ColorRect   = $UI/EndScreen
 @onready var end_label: Label        = $UI/EndScreen/EndBox/EndLabel
+@onready var spell_bar: HBoxContainer     = $UI/SpellBar
+@onready var level_up_panel: PanelContainer = $UI/LevelUpPanel
+@onready var choice_btns: Array[Button] = [
+	$UI/LevelUpPanel/LevelBox/Choice1,
+	$UI/LevelUpPanel/LevelBox/Choice2,
+]
 
 var state := State.IDLE
 var selected_unit: Unit      = null
@@ -20,23 +26,27 @@ var current_player := 0
 var ai_thinking    := false
 var game_over      := false
 var turn_count     := 1
+var casting_spell  := ""
+var _offered_spells: Array[String] = []
 
 func _ready() -> void:
 	var mid := map.get_map_size() / 2
 	camera.global_position = map.to_global(map.map_to_local(mid))
+	for i in choice_btns.size():
+		choice_btns[i].pressed.connect(_on_spell_choice.bind(i))
 	_update_turn_label()
 
 # ── Entrées ──────────────────────────────────────────────────────────────────
 
 func _input(event: InputEvent) -> void:
-	if ai_thinking or game_over:
+	if ai_thinking or game_over or level_up_panel.visible:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE]:
 			_end_turn()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if ai_thinking or game_over:
+	if ai_thinking or game_over or level_up_panel.visible:
 		return
 	if not (event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_LEFT):
@@ -68,6 +78,7 @@ func _handle_click(cell: Vector2i) -> void:
 						attacker.queue_redraw()
 					_deselect()
 					_check_game_over()
+					_maybe_show_levelup()
 				elif clicked != null and clicked.team == current_player and not clicked.has_moved:
 					_deselect()
 					_select(clicked)
@@ -82,8 +93,17 @@ func _handle_click(cell: Vector2i) -> void:
 				if is_instance_valid(attacker):
 					attacker.has_moved = true
 					attacker.queue_redraw()
-			_deselect()
-			_check_game_over()
+				_deselect()
+				_check_game_over()
+				_maybe_show_levelup()
+			else:
+				_deselect()
+
+		State.CASTING:
+			if units_layer.spell_cells.has(cell):
+				_execute_cast(cell)
+			else:
+				_deselect()
 
 # ── Transitions d'état ───────────────────────────────────────────────────────
 
@@ -96,15 +116,19 @@ func _select(unit: Unit) -> void:
 	_mark_attackable(units_layer.get_enemies_in_range(unit))
 	attack_zone_btn.show()
 	attack_zone_btn.text = "Zone d'attaque"
+	_update_spell_bar()
 	_update_turn_label()
 
 func _after_move() -> void:
 	attack_zone_btn.hide()
 	_mark_attackable(units_layer.get_enemies_in_range(selected_unit))
-	if attackable_enemies.is_empty():
+	# On reste sélectionné s'il y a une cible OU un sort encore lançable
+	if attackable_enemies.is_empty() \
+			and not (selected_unit.is_hero() and selected_unit.has_ready_spell()):
 		_deselect()
 		return
 	state = State.UNIT_MOVED
+	_update_spell_bar()
 	_update_turn_label()
 
 # Remplace les anneaux rouges actuels par ceux des ennemis donnés
@@ -129,8 +153,10 @@ func _deselect() -> void:
 	attackable_enemies.clear()
 	selected_unit = null
 	state = State.IDLE
+	casting_spell = ""
 	units_layer.clear_reachable()
 	attack_zone_btn.hide()
+	spell_bar.hide()
 	_update_turn_label()
 
 func _end_turn() -> void:
@@ -144,6 +170,8 @@ func _end_turn() -> void:
 	_update_turn_label()
 	if current_player == AI_TEAM:
 		_run_ai_turn()  # coroutine lancée en arrière-plan
+	else:
+		_maybe_show_levelup()
 
 # ── Fin de partie ────────────────────────────────────────────────────────────
 
@@ -172,6 +200,113 @@ func _check_game_over() -> bool:
 func _on_restart_pressed() -> void:
 	get_tree().reload_current_scene()
 
+# ── Sorts ────────────────────────────────────────────────────────────────────
+
+func _update_spell_bar() -> void:
+	for child in spell_bar.get_children():
+		child.queue_free()
+	if selected_unit == null or not selected_unit.is_hero() \
+			or selected_unit.learned_spells.is_empty():
+		spell_bar.hide()
+		return
+	for id: String in selected_unit.learned_spells:
+		var btn := Button.new()
+		var cd: int = selected_unit.cooldowns.get(id, 0)
+		btn.text = Spells.POOL[id]["name"] + ("" if cd == 0 else " (%d)" % cd)
+		btn.tooltip_text = Spells.POOL[id]["desc"] \
+				+ (" — n'épuise pas l'attaque" if Spells.POOL[id]["free"] else " — consomme l'attaque")
+		btn.disabled = not selected_unit.spell_ready(id)
+		btn.pressed.connect(_on_spell_pressed.bind(id))
+		spell_bar.add_child(btn)
+	spell_bar.show()
+
+func _on_spell_pressed(id: String) -> void:
+	if selected_unit == null or not selected_unit.spell_ready(id):
+		return
+	if id == "warcry":
+		_execute_cast(selected_unit.cell, id)
+		return
+	casting_spell = id
+	state = State.CASTING
+	units_layer.show_spell_targets(_valid_spell_targets(selected_unit, id))
+	_update_turn_label()
+
+func _valid_spell_targets(caster: Unit, id: String) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var r: int = Spells.POOL[id]["range"]
+	for cell in Pathfinder.cells_in_range(caster.cell, r):
+		if not map.is_in_bounds(cell):
+			continue
+		match id:
+			"heal":
+				var u := units_layer.get_unit_at(cell)
+				if u != null and u.team == caster.team and u.hp < u.max_hp:
+					out.append(cell)
+			"fireball":
+				out.append(cell)
+			"blink":
+				if cell != caster.cell and units_layer.get_unit_at(cell) == null \
+						and Unit.STATS[caster.type]["costs"].get(map.get_terrain(cell), 99) < 99:
+					out.append(cell)
+	return out
+
+func _execute_cast(target_cell: Vector2i, id: String = "") -> void:
+	var spell: String = id if id != "" else casting_spell
+	var caster := selected_unit
+	var free_action: bool = Spells.POOL[spell]["free"]
+	units_layer.cast_spell(caster, spell, target_cell)
+	casting_spell = ""
+	if not free_action and is_instance_valid(caster):
+		caster.has_moved = true
+		caster.queue_redraw()
+	_deselect()
+	_check_game_over()
+	if game_over:
+		return
+	# Sort gratuit : le héros garde son attaque, on le re-sélectionne
+	if free_action and is_instance_valid(caster):
+		if caster.has_moved:
+			selected_unit = caster
+			caster.selected = true
+			caster.queue_redraw()
+			_after_move()
+		else:
+			_select(caster)
+	_maybe_show_levelup()
+
+# ── Choix de sort au level-up ────────────────────────────────────────────────
+
+func _maybe_show_levelup() -> void:
+	if game_over or ai_thinking or level_up_panel.visible:
+		return
+	var hero := units_layer.get_hero(0)
+	if hero == null or hero.pending_levelups == 0:
+		return
+	var pool := hero.unlearned_spells()
+	if pool.is_empty():
+		hero.pending_levelups = 0
+		return
+	pool.shuffle()
+	_offered_spells = pool.slice(0, 2)
+	for i in choice_btns.size():
+		if i < _offered_spells.size():
+			var def: Dictionary = Spells.POOL[_offered_spells[i]]
+			choice_btns[i].text = "%s — %s" % [def["name"], def["desc"]]
+			choice_btns[i].show()
+		else:
+			choice_btns[i].hide()
+	level_up_panel.show()
+
+func _on_spell_choice(index: int) -> void:
+	var hero := units_layer.get_hero(0)
+	if hero != null and index < _offered_spells.size():
+		hero.learned_spells.append(_offered_spells[index])
+		hero.pending_levelups -= 1
+		print("Sort appris : %s" % Spells.POOL[_offered_spells[index]]["name"])
+	level_up_panel.hide()
+	_update_spell_bar()
+	_maybe_show_levelup()   # d'autres niveaux en attente ?
+
 # ── IA ───────────────────────────────────────────────────────────────────────
 
 func _run_ai_turn() -> void:
@@ -191,6 +326,16 @@ func _run_ai_turn() -> void:
 	var ai_hero := units_layer.get_hero(AI_TEAM)
 	if ai_hero != null:
 		ai_units.append(ai_hero)
+		# L'IA apprend ses sorts sans écran de choix
+		while ai_hero.pending_levelups > 0:
+			var pool := ai_hero.unlearned_spells()
+			if pool.is_empty():
+				ai_hero.pending_levelups = 0
+				break
+			pool.shuffle()
+			ai_hero.learned_spells.append(pool[0])
+			ai_hero.pending_levelups -= 1
+			print("IA apprend : %s" % Spells.POOL[pool[0]]["name"])
 
 	for unit: Unit in ai_units:
 		if not is_instance_valid(unit) or unit.has_moved:
@@ -262,6 +407,22 @@ func _ai_act_hero(unit: Unit) -> void:
 		unit.queue_redraw()
 		return
 
+	# Sorts : se soigner, ou boule de feu sur un groupe (jamais sur les siens)
+	if unit.spell_ready("heal") and unit.hp <= unit.max_hp - Spells.HEAL_AMOUNT:
+		units_layer.cast_spell(unit, "heal", unit.cell)
+		unit.has_moved = true
+		unit.queue_redraw()
+		return
+	if unit.spell_ready("fireball"):
+		var center := AIPlayer.best_fireball_center(unit, units_layer)
+		if center != Vector2i(-99, -99):
+			units_layer.cast_spell(unit, "fireball", center)
+			if is_instance_valid(unit):
+				unit.has_moved = true
+				unit.queue_redraw()
+			_check_game_over()
+			return
+
 	var in_range := units_layer.get_enemies_in_range(unit)
 	var kill := AIPlayer.pick_killable_target(unit, in_range, map)
 	if kill != null:
@@ -298,10 +459,12 @@ func _update_turn_label() -> void:
 	var unit_label := ""
 	if is_instance_valid(selected_unit):
 		unit_label = selected_unit.unit_name()
+	var spell_name: String = Spells.POOL[casting_spell]["name"] if casting_spell != "" else ""
 	var hints := {
 		State.IDLE:          "",
 		State.UNIT_SELECTED: " — %s : déplacer ou attaquer" % unit_label,
 		State.UNIT_MOVED:    " — %s : attaquer ou cliquer ailleurs" % unit_label,
+		State.CASTING:       " — %s : choisir la cible" % spell_name,
 	}
 	var suffix: String = " — Réflexion…" if ai_thinking else hints.get(state, "")
 	turn_label.text = "Tour %d — %s%s" % [turn_count, player_names[current_player], suffix]

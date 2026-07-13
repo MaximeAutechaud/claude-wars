@@ -5,10 +5,12 @@ extends Node2D
 
 var reachable_cells: Dictionary = {}
 var attack_cells: Dictionary = {}   # cases hors portée de mouvement mais attaquables
+var spell_cells: Dictionary = {}    # cibles valides du sort en cours de visée
 var _show_attack_zone := false
 
 const HIGHLIGHT        := Color(0.35, 0.65, 1.0, 0.40)
 const ATTACK_HIGHLIGHT := Color(1.0,  0.25, 0.25, 0.35)
+const SPELL_HIGHLIGHT  := Color(0.65, 0.35, 1.0, 0.45)
 
 var _unit_scene: PackedScene = preload("res://scenes/unit.tscn")
 
@@ -84,12 +86,9 @@ func show_reachable(unit: Unit) -> void:
 	attack_cells.clear()
 	var r := unit.attack_range()
 	if r > 1:
-		for dx in range(-r, r + 1):
-			for dy in range(-r, r + 1):
-				var target := unit.cell + Vector2i(dx, dy)
-				if target != unit.cell and map.is_in_bounds(target) \
-						and Pathfinder.distance(unit.cell, target) <= r:
-					attack_cells[target] = true
+		for target in Pathfinder.cells_in_range(unit.cell, r):
+			if target != unit.cell and map.is_in_bounds(target):
+				attack_cells[target] = true
 	else:
 		for cell: Vector2i in reachable_cells:
 			for nb in Pathfinder.get_neighbors(cell):
@@ -106,8 +105,52 @@ func toggle_attack_zone() -> void:
 func clear_reachable() -> void:
 	reachable_cells.clear()
 	attack_cells.clear()
+	spell_cells.clear()
 	_show_attack_zone = false
 	queue_redraw()
+
+func show_spell_targets(cells: Array[Vector2i]) -> void:
+	reachable_cells.clear()
+	attack_cells.clear()
+	spell_cells.clear()
+	for cell in cells:
+		spell_cells[cell] = true
+	queue_redraw()
+
+# Applique l'effet du sort et arme son cooldown
+func cast_spell(caster: Unit, id: String, target_cell: Vector2i) -> void:
+	var def: Dictionary = Spells.POOL[id]
+	print("%s lance %s" % [caster.unit_name(), def["name"]])
+	match id:
+		"heal":
+			var t := get_unit_at(target_cell)
+			if t != null:
+				t.hp = mini(t.hp + Spells.HEAL_AMOUNT, t.max_hp)
+				t.queue_redraw()
+		"fireball":
+			for cell in Pathfinder.cells_in_range(target_cell, Spells.FIREBALL_RADIUS):
+				var u := get_unit_at(cell)
+				if u == null:
+					continue
+				u.hp -= Spells.FIREBALL_DAMAGE
+				u.queue_redraw()
+				print("  %s touché : -%d PV → %d PV" % [u.unit_name(), Spells.FIREBALL_DAMAGE, u.hp])
+				if u.hp <= 0:
+					u.queue_free()
+					if u.team != caster.team:
+						_award_kill_xp(caster)
+		"blink":
+			caster.cell = target_cell
+			caster.position = to_local(map.to_global(map.map_to_local(target_cell)))
+		"warcry":
+			for cell in Pathfinder.cells_in_range(caster.cell, Spells.WARCRY_RADIUS):
+				var u := get_unit_at(cell)
+				if u != null and u.team == caster.team and u != caster:
+					u.temp_atk_bonus = Spells.WARCRY_BONUS
+					u.queue_redraw()
+	caster.cooldowns[id] = def["cooldown"]
+	caster.has_cast = true
+	caster.queue_redraw()
 
 # Ennemis attaquables par `unit` depuis sa case (distance Manhattan <= portée)
 func get_enemies_in_range(unit: Unit) -> Array[Unit]:
@@ -161,7 +204,11 @@ func reset_team(team: int) -> void:
 		if child is Unit and (child as Unit).team == team:
 			var u := child as Unit
 			u.has_moved = false
+			u.has_cast = false
 			u.remaining_mp = u.movement_points()
+			u.temp_atk_bonus = 0
+			for id in u.cooldowns:
+				u.cooldowns[id] = maxi(0, u.cooldowns[id] - 1)
 			u.queue_redraw()
 
 # cost = -1 → lu depuis reachable_cells (flow joueur)
@@ -176,7 +223,7 @@ func move_unit(unit: Unit, target: Vector2i, cost: int = -1) -> void:
 	clear_reachable()
 
 func _draw() -> void:
-	if reachable_cells.is_empty() or not map.tile_set:
+	if not map.tile_set:
 		return
 	var hw := map.tile_set.tile_size.x * 0.5
 	var hh := map.tile_set.tile_size.y * 0.5
@@ -187,6 +234,9 @@ func _draw() -> void:
 	if _show_attack_zone:
 		for cell: Vector2i in attack_cells:
 			_draw_hex(map_to_screen(cell), hw, hh, ATTACK_HIGHLIGHT)
+
+	for cell: Vector2i in spell_cells:
+		_draw_hex(map_to_screen(cell), hw, hh, SPELL_HIGHLIGHT)
 
 func map_to_screen(cell: Vector2i) -> Vector2:
 	return to_local(map.to_global(map.map_to_local(cell)))

@@ -39,8 +39,15 @@ Enseignements :
    perdre le sien. Contrairement au leader Wesnoth (planqué au donjon), le héros
    est une pièce spectaculaire à la WC3 : XP sur les kills, niveaux, et à chaque
    niveau un choix entre deux améliorations/compétences.
-3. **Compétences actives de héros** — une action spéciale avec cooldown en tours
-   (ex. soin de zone, boule de feu, cri de guerre buffant les alliés adjacents).
+3. **Compétences actives de héros** — cooldown en tours, **un seul sort par
+   tour**. Coût par sort : les sorts utilitaires (Bond, Cri de guerre) sont
+   **gratuits** (le héros garde son attaque — fantasme d'engage à la WC3),
+   les gros sorts (Soin, Boule de feu) **consomment l'action** comme une
+   attaque. Décidé le 13/07/2026 : le sentiment gamechanger vient du design
+   des sorts, pas de l'empilement d'actions ; tag `free` par sort dans
+   `Spells.POOL`, facile à retuner au playtest. **Un seul héros par camp**
+   (confirmé) ; d'éventuels héros secondaires de campagne seraient des
+   lieutenants sans condition de défaite attachée.
 4. **Villages capturables** — +or par tour et soin de l'unité qui s'y trouve.
    Enjeux territoriaux locaux sans économie profonde ni multiples types de bâtiments.
 5. **Recrutement autour du héros** avec l'or (pas d'usines à la AW) — un seul
@@ -62,7 +69,7 @@ Enseignements :
 	Principes :
 	- **Patterns lisibles et télégraphiés** : le combat étant déterministe, on
 	  peut afficher à l'avance ce que le boss fera au prochain tour (cases
-      ciblées par son AoE, invocation à venir…) — le combat devient un puzzle
+	  ciblées par son AoE, invocation à venir…) — le combat devient un puzzle
 	  d'échecs, pas une loterie de stats.
 	- **Phases par paliers de PV** : à 66 % / 33 %, le boss change de
 	  comportement ou débloque un nouveau spell.
@@ -78,19 +85,19 @@ Enseignements :
 	  (protéger ou laisser mourir), il punit le regroupement OU la dispersion.
 	  La victoire doit avoir un **coût** : l'état de l'armée en sortant du boss
 	  fait partie de l'histoire. Prérequis : la vétérance (phase 8) — le
-      sacrifice ne fait mal que si on tient à ses unités.
-    - Techniquement, un boss réutilise les briques existantes : le système de
+	  sacrifice ne fait mal que si on tient à ses unités.
+	- Techniquement, un boss réutilise les briques existantes : le système de
 	  compétences des héros (phase 6) + l'équipe neutre des creeps (phase 7).
 	  C'est du contenu premium par-dessus les systèmes, pas un système à part.
 
 11. **Grille hexagonale** (décision du 13/07/2026, priorité gameplay > design).
-    Hexagones flat-top, colonnes décalées (odd-q), à la Wesnoth. Raisons :
+	Hexagones flat-top, colonnes décalées (odd-q), à la Wesnoth. Raisons :
 	6 adjacences → l'encerclement devient une vraie tactique, distances rondes
 	(la portée 2 de l'archer couvre un disque de 18 cases), AoE naturelles pour
-    les futurs sorts de héros et zones de boss. Le jeu visé est punitif donc
-    stratégique : les bons joueurs doivent être récompensés par le
-    positionnement. Coût assumé : abandon de la perspective isométrique pour
-    une vue à plat.
+	les futurs sorts de héros et zones de boss. Le jeu visé est punitif donc
+	stratégique : les bons joueurs doivent être récompensés par le
+	positionnement. Coût assumé : abandon de la perspective isométrique pour
+	une vue à plat.
 
 ## Feuille de route
 
@@ -106,7 +113,11 @@ Chaque phase doit laisser un jeu jouable.
 	  sans venir au contact, ne frappe que pour achever une cible, replie sous
 	  40 % de PV, et ne se bat en première ligne que s'il est seul
 - [ ] **Phase 5** — économie : villages capturables, or, recrutement autour du héros
-- [ ] **Phase 6** — compétences de héros (une active par niveau, choix entre deux)
+- [x] **Phase 6** — compétences de héros (avancée avant la phase 5) : pool de
+	  4 sorts (Soin, Boule de feu avec friendly fire, Bond, Cri de guerre),
+	  choix entre 2 sorts à chaque level-up, 1 sort/tour, Bond et Cri gratuits,
+	  Soin et Boule de feu = l'action du tour (possible après déplacement),
+	  cooldowns en tours ; IA : auto-soin et boule de feu sur groupe sans allié
 - [ ] **Phase 7** — creeps neutres et récompenses
 - [ ] **Phase 8** — vétérance des unités
 - [ ] **Phase 9+** — scénarios, campagne, recall des vétérans, boss fights en climax de scénario

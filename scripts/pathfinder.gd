@@ -47,6 +47,16 @@ static func get_neighbors(cell: Vector2i) -> Array[Vector2i]:
 		cell + Vector2i(-1, odd),         # SO
 	]
 
+# Toutes les cases à distance <= r de center (center inclus)
+static func cells_in_range(center: Vector2i, r: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for dx in range(-r, r + 1):
+		for dy in range(-r, r + 1):
+			var cell := center + Vector2i(dx, dy)
+			if distance(center, cell) <= r:
+				out.append(cell)
+	return out
+
 # Distance hexagonale (en nombre de cases), via coordonnées cubiques
 static func distance(a: Vector2i, b: Vector2i) -> int:
 	var ar := a.y - (a.x - (a.x & 1)) / 2
