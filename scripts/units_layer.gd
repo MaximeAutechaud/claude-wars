@@ -51,16 +51,23 @@ func show_reachable(unit: Unit) -> void:
 			candidates.erase((child as Unit).cell)
 	reachable_cells = candidates
 
-	# Cases hors portée de mouvement mais dans la portée d'attaque
-	# depuis au moins une case atteignable : zone d'attaque exclusive
+	# Zone d'attaque :
+	# - unité à distance : losange de portée autour de la case ACTUELLE
+	#   (elle tire d'où elle est, pas après déplacement)
+	# - mêlée : cases attaquables après déplacement (bordure de la zone de mouvement)
 	attack_cells.clear()
 	var r := unit.attack_range()
-	for cell: Vector2i in reachable_cells:
+	if r > 1:
 		for dx in range(-r, r + 1):
 			for dy in range(-r + abs(dx), r - abs(dx) + 1):
-				var target := cell + Vector2i(dx, dy)
-				if not reachable_cells.has(target) and map.is_in_bounds(target):
+				var target := unit.cell + Vector2i(dx, dy)
+				if target != unit.cell and map.is_in_bounds(target):
 					attack_cells[target] = true
+	else:
+		for cell: Vector2i in reachable_cells:
+			for nb in Pathfinder.get_neighbors(cell):
+				if not reachable_cells.has(nb) and map.is_in_bounds(nb):
+					attack_cells[nb] = true
 
 	_show_attack_zone = false
 	queue_redraw()
