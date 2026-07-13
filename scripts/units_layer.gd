@@ -68,9 +68,10 @@ func show_reachable(unit: Unit) -> void:
 	var r := unit.attack_range()
 	if r > 1:
 		for dx in range(-r, r + 1):
-			for dy in range(-r + abs(dx), r - abs(dx) + 1):
+			for dy in range(-r, r + 1):
 				var target := unit.cell + Vector2i(dx, dy)
-				if target != unit.cell and map.is_in_bounds(target):
+				if target != unit.cell and map.is_in_bounds(target) \
+						and Pathfinder.distance(unit.cell, target) <= r:
 					attack_cells[target] = true
 	else:
 		for cell: Vector2i in reachable_cells:
@@ -100,7 +101,7 @@ func get_enemies_in_range(unit: Unit) -> Array[Unit]:
 		var u := child as Unit
 		if u.team == unit.team:
 			continue
-		var d := Pathfinder.manhattan(unit.cell, u.cell)
+		var d := Pathfinder.distance(unit.cell, u.cell)
 		if d >= 1 and d <= unit.attack_range():
 			enemies.append(u)
 	return enemies
@@ -109,7 +110,7 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 	if not is_instance_valid(attacker) or not is_instance_valid(defender):
 		return
 
-	var dist := Pathfinder.manhattan(attacker.cell, defender.cell)
+	var dist := Pathfinder.distance(attacker.cell, defender.cell)
 	var atk_dmg := maxi(1, attacker.atk() - map.get_defense_bonus(defender.cell))
 	defender.hp -= atk_dmg
 	print("%s attaque %s : -%d PV  →  défenseur à %d PV"
@@ -162,19 +163,14 @@ func _draw() -> void:
 	var hh := map.tile_set.tile_size.y * 0.5
 
 	for cell: Vector2i in reachable_cells:
-		_draw_diamond(map_to_screen(cell), hw, hh, HIGHLIGHT)
+		_draw_hex(map_to_screen(cell), hw, hh, HIGHLIGHT)
 
 	if _show_attack_zone:
 		for cell: Vector2i in attack_cells:
-			_draw_diamond(map_to_screen(cell), hw, hh, ATTACK_HIGHLIGHT)
+			_draw_hex(map_to_screen(cell), hw, hh, ATTACK_HIGHLIGHT)
 
 func map_to_screen(cell: Vector2i) -> Vector2:
 	return to_local(map.to_global(map.map_to_local(cell)))
 
-func _draw_diamond(p: Vector2, hw: float, hh: float, color: Color) -> void:
-	draw_colored_polygon(PackedVector2Array([
-		p + Vector2(0,  -hh),
-		p + Vector2(hw,   0),
-		p + Vector2(0,   hh),
-		p + Vector2(-hw,  0),
-	]), color)
+func _draw_hex(p: Vector2, hw: float, hh: float, color: Color) -> void:
+	draw_colored_polygon(GameMap.hex_corners(p, hw, hh), color)

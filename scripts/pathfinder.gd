@@ -34,13 +34,23 @@ static func get_reachable(start: Vector2i, mp: int, map: GameMap,
 
 	return dist
 
+# Grille hexagonale flat-top, colonnes impaires décalées vers le bas
+# (odd-q, aligné sur le TileSet Godot : offset axis vertical).
 static func get_neighbors(cell: Vector2i) -> Array[Vector2i]:
+	var odd := cell.x & 1
 	return [
-		cell + Vector2i( 1,  0),
-		cell + Vector2i(-1,  0),
-		cell + Vector2i( 0,  1),
-		cell + Vector2i( 0, -1),
+		cell + Vector2i(0, -1),           # N
+		cell + Vector2i(0,  1),           # S
+		cell + Vector2i(1, -1 + odd),     # NE
+		cell + Vector2i(1,  odd),         # SE
+		cell + Vector2i(-1, -1 + odd),    # NO
+		cell + Vector2i(-1, odd),         # SO
 	]
 
-static func manhattan(a: Vector2i, b: Vector2i) -> int:
-	return abs(a.x - b.x) + abs(a.y - b.y)
+# Distance hexagonale (en nombre de cases), via coordonnées cubiques
+static func distance(a: Vector2i, b: Vector2i) -> int:
+	var ar := a.y - (a.x - (a.x & 1)) / 2
+	var br := b.y - (b.x - (b.x & 1)) / 2
+	var dq := b.x - a.x
+	var dr := br - ar
+	return (absi(dq) + absi(dr) + absi(dq + dr)) / 2

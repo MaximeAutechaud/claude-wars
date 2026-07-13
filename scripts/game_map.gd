@@ -3,8 +3,9 @@ extends TileMapLayer
 
 const MAP_W := 12
 const MAP_H := 10
+# Hexagone flat-top : largeur pointe à pointe, hauteur bord à bord (≈ W·√3/2)
 const TILE_W := 64
-const TILE_H := 32
+const TILE_H := 56
 
 enum Terrain { PLAINS, FOREST, MOUNTAIN, ROAD, RIVER }
 
@@ -34,8 +35,8 @@ func _ready() -> void:
 
 func _build_tileset() -> void:
 	var ts := TileSet.new()
-	ts.tile_shape = TileSet.TILE_SHAPE_ISOMETRIC
-	ts.tile_layout = TileSet.TILE_LAYOUT_DIAMOND_DOWN
+	ts.tile_shape = TileSet.TILE_SHAPE_HEXAGON
+	ts.tile_offset_axis = TileSet.TILE_OFFSET_AXIS_VERTICAL
 	ts.tile_size = Vector2i(TILE_W, TILE_H)
 
 	# Une source par terrain : source_id = valeur de l'enum Terrain
@@ -85,3 +86,14 @@ func get_defense_bonus(cell: Vector2i) -> int:
 
 func get_map_size() -> Vector2i:
 	return Vector2i(MAP_W, MAP_H)
+
+# Sommets d'un hexagone flat-top centré sur `center` (hw/hh = demi-taille)
+static func hex_corners(center: Vector2, hw: float, hh: float) -> PackedVector2Array:
+	return PackedVector2Array([
+		center + Vector2(-hw, 0),
+		center + Vector2(-hw * 0.5, -hh),
+		center + Vector2(hw * 0.5, -hh),
+		center + Vector2(hw, 0),
+		center + Vector2(hw * 0.5, hh),
+		center + Vector2(-hw * 0.5, hh),
+	])

@@ -83,6 +83,15 @@ Enseignements :
 	  compétences des héros (phase 6) + l'équipe neutre des creeps (phase 7).
 	  C'est du contenu premium par-dessus les systèmes, pas un système à part.
 
+11. **Grille hexagonale** (décision du 13/07/2026, priorité gameplay > design).
+    Hexagones flat-top, colonnes décalées (odd-q), à la Wesnoth. Raisons :
+	6 adjacences → l'encerclement devient une vraie tactique, distances rondes
+	(la portée 2 de l'archer couvre un disque de 18 cases), AoE naturelles pour
+    les futurs sorts de héros et zones de boss. Le jeu visé est punitif donc
+    stratégique : les bons joueurs doivent être récompensés par le
+    positionnement. Coût assumé : abandon de la perspective isométrique pour
+    une vue à plat.
+
 ## Feuille de route
 
 Chaque phase doit laisser un jeu jouable.
@@ -99,7 +108,9 @@ Chaque phase doit laisser un jeu jouable.
 
 ## État technique actuel (rappel)
 
-Godot 4.7, GDScript, rendu GL Compatibility. Carte 12×10 isométrique, 5 terrains
+Godot 4.7, GDScript, rendu GL Compatibility. Carte 12×10 **hexagonale**
+(flat-top, odd-q — toute la géométrie passe par `Pathfinder.get_neighbors` et
+`Pathfinder.distance`), 5 terrains
 (coûts de mouvement par type d'unité, bonus de défense), 3 types d'unités avec
 portée et riposte conditionnelle, IA qui garde ses distances avec les unités à
 portée, sprites SVG maison teintés par équipe, animation d'idle 2 frames.

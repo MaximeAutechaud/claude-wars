@@ -22,10 +22,6 @@ func _draw() -> void:
 	var p := to_local(world_pos)
 	var hw := map.tile_set.tile_size.x * 0.5
 	var hh := map.tile_set.tile_size.y * 0.5
-	draw_polyline(PackedVector2Array([
-		p + Vector2(0, -hh),
-		p + Vector2(hw,  0),
-		p + Vector2(0,  hh),
-		p + Vector2(-hw, 0),
-		p + Vector2(0, -hh),
-	]), Color(1.0, 0.9, 0.0, 0.9), 2.0)
+	var pts := GameMap.hex_corners(p, hw, hh)
+	pts.append(pts[0])
+	draw_polyline(pts, Color(1.0, 0.9, 0.0, 0.9), 2.0)

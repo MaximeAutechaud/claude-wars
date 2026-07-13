@@ -110,9 +110,9 @@ func _draw() -> void:
 		tint = tint.darkened(0.45)
 	sprite.self_modulate = tint
 
-	# Losanges sur la case : blanc = sélectionnée, rouge = attaquable
+	# Contours d'hexagone sur la case : blanc = sélectionnée, rouge = attaquable
 	var hw := GameMap.TILE_W * 0.5 - 3.0
-	var hh := GameMap.TILE_H * 0.5 - 1.5
+	var hh := GameMap.TILE_H * 0.5 - 2.5
 	if selected:
 		_draw_cell_outline(hw, hh, Color.WHITE, 2.0)
 	if attackable:
@@ -126,6 +126,6 @@ func _draw() -> void:
 	draw_rect(Rect2(-bw * 0.5, by, bw * hp / float(max_hp), bh), Color(0.15, 0.85, 0.2))
 
 func _draw_cell_outline(hw: float, hh: float, color: Color, width: float) -> void:
-	draw_polyline(PackedVector2Array([
-		Vector2(0, -hh), Vector2(hw, 0), Vector2(0, hh), Vector2(-hw, 0), Vector2(0, -hh),
-	]), color, width)
+	var pts := GameMap.hex_corners(Vector2.ZERO, hw, hh)
+	pts.append(pts[0])
+	draw_polyline(pts, color, width)
