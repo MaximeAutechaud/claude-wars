@@ -37,6 +37,15 @@ func spawn(cell: Vector2i, team: int, type: Unit.Type) -> Unit:
 	u.position = to_local(map.to_global(map.map_to_local(cell)))
 	return u
 
+# Unités vivantes d'une équipe (ignore celles en cours de suppression)
+func count_team(team: int) -> int:
+	var n := 0
+	for child in get_children():
+		if child is Unit and not child.is_queued_for_deletion() \
+				and (child as Unit).team == team:
+			n += 1
+	return n
+
 func get_unit_at(cell: Vector2i) -> Unit:
 	for child in get_children():
 		if child is Unit and (child as Unit).cell == cell:

@@ -10,12 +10,16 @@ const AI_TEAM := 1
 @onready var turn_label: Label       = $UI/TurnLabel
 @onready var attack_zone_btn: Button = $UI/AttackZoneButton
 @onready var end_turn_btn: Button    = $UI/EndTurnButton
+@onready var end_screen: ColorRect   = $UI/EndScreen
+@onready var end_label: Label        = $UI/EndScreen/EndBox/EndLabel
 
 var state := State.IDLE
 var selected_unit: Unit      = null
 var attackable_enemies: Array[Unit] = []
 var current_player := 0
 var ai_thinking    := false
+var game_over      := false
+var turn_count     := 1
 
 func _ready() -> void:
 	var mid := map.get_map_size() / 2
@@ -25,14 +29,14 @@ func _ready() -> void:
 # ── Entrées ──────────────────────────────────────────────────────────────────
 
 func _input(event: InputEvent) -> void:
-	if ai_thinking:
+	if ai_thinking or game_over:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE]:
 			_end_turn()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if ai_thinking:
+	if ai_thinking or game_over:
 		return
 	if not (event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_LEFT):
@@ -63,6 +67,7 @@ func _handle_click(cell: Vector2i) -> void:
 						attacker.has_moved = true
 						attacker.queue_redraw()
 					_deselect()
+					_check_game_over()
 				elif clicked != null and clicked.team == current_player and not clicked.has_moved:
 					_deselect()
 					_select(clicked)
@@ -78,6 +83,7 @@ func _handle_click(cell: Vector2i) -> void:
 					attacker.has_moved = true
 					attacker.queue_redraw()
 			_deselect()
+			_check_game_over()
 
 # ── Transitions d'état ───────────────────────────────────────────────────────
 
@@ -128,14 +134,40 @@ func _deselect() -> void:
 	_update_turn_label()
 
 func _end_turn() -> void:
-	if ai_thinking:
+	if ai_thinking or game_over:
 		return
 	_deselect()
 	units_layer.reset_team(current_player)
 	current_player = 1 - current_player
+	if current_player == 0:
+		turn_count += 1
 	_update_turn_label()
 	if current_player == AI_TEAM:
 		_run_ai_turn()  # coroutine lancée en arrière-plan
+
+# ── Fin de partie ────────────────────────────────────────────────────────────
+
+func _check_game_over() -> bool:
+	if game_over:
+		return true
+	var blue := units_layer.count_team(0)
+	var red := units_layer.count_team(AI_TEAM)
+	if blue > 0 and red > 0:
+		return false
+	game_over = true
+	end_turn_btn.disabled = true
+	attack_zone_btn.hide()
+	if blue == 0:
+		end_label.text = "Défaite…"
+		end_label.modulate = Unit.TEAM_COLORS[AI_TEAM]
+	else:
+		end_label.text = "Victoire !"
+		end_label.modulate = Unit.TEAM_COLORS[0]
+	end_screen.show()
+	return true
+
+func _on_restart_pressed() -> void:
+	get_tree().reload_current_scene()
 
 # ── IA ───────────────────────────────────────────────────────────────────────
 
@@ -156,6 +188,9 @@ func _run_ai_turn() -> void:
 		if not is_instance_valid(unit) or unit.has_moved:
 			continue
 		_ai_act_unit(unit)
+		if _check_game_over():
+			ai_thinking = false
+			return
 		await get_tree().create_timer(0.5).timeout
 
 	ai_thinking = false
@@ -219,5 +254,5 @@ func _update_turn_label() -> void:
 		State.UNIT_MOVED:    " — %s : attaquer ou cliquer ailleurs" % unit_label,
 	}
 	var suffix: String = " — Réflexion…" if ai_thinking else hints.get(state, "")
-	turn_label.text = player_names[current_player] + suffix
+	turn_label.text = "Tour %d — %s%s" % [turn_count, player_names[current_player], suffix]
 	turn_label.modulate = Unit.TEAM_COLORS[current_player]

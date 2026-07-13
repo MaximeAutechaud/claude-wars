@@ -58,30 +58,30 @@ Enseignements :
    tenir un pont, s'échapper), héros et vétérans persistants de mission en
    mission (recall à la Wesnoth). La boucle de rétention idéale du format solo.
 10. **Boss fights** — en climax de scénario, un ennemi unique très puissant avec
-    des spells et mécaniques propres, à la manière d'un boss de roguelike.
-    Principes :
-    - **Patterns lisibles et télégraphiés** : le combat étant déterministe, on
-      peut afficher à l'avance ce que le boss fera au prochain tour (cases
+	des spells et mécaniques propres, à la manière d'un boss de roguelike.
+	Principes :
+	- **Patterns lisibles et télégraphiés** : le combat étant déterministe, on
+	  peut afficher à l'avance ce que le boss fera au prochain tour (cases
       ciblées par son AoE, invocation à venir…) — le combat devient un puzzle
-      d'échecs, pas une loterie de stats.
-    - **Phases par paliers de PV** : à 66 % / 33 %, le boss change de
-      comportement ou débloque un nouveau spell.
-    - **Mécaniques uniques par boss** : invocation d'adds, zones de danger au
-      sol, bouclier à briser, malus d'aura… une signature par boss plutôt que
-      des gros chiffres.
-    - **Des machines à dilemmes, pas des sacs à PV** (référence : Darkest
-      Dungeon). Le boss doit mettre le joueur dans la merde et forcer des
-      choix forts — sacrifier une unité pour en sauver deux, abandonner une
-      position, brûler un cooldown trop tôt. Exemples de mécaniques à dilemme :
-      le boss **agrippe** une unité (la libérer coûte des tours, l'abandonner
-      la tue), il **marque** une cible qu'il exécutera au prochain tour
-      (protéger ou laisser mourir), il punit le regroupement OU la dispersion.
-      La victoire doit avoir un **coût** : l'état de l'armée en sortant du boss
-      fait partie de l'histoire. Prérequis : la vétérance (phase 8) — le
+	  d'échecs, pas une loterie de stats.
+	- **Phases par paliers de PV** : à 66 % / 33 %, le boss change de
+	  comportement ou débloque un nouveau spell.
+	- **Mécaniques uniques par boss** : invocation d'adds, zones de danger au
+	  sol, bouclier à briser, malus d'aura… une signature par boss plutôt que
+	  des gros chiffres.
+	- **Des machines à dilemmes, pas des sacs à PV** (référence : Darkest
+	  Dungeon). Le boss doit mettre le joueur dans la merde et forcer des
+	  choix forts — sacrifier une unité pour en sauver deux, abandonner une
+	  position, brûler un cooldown trop tôt. Exemples de mécaniques à dilemme :
+	  le boss **agrippe** une unité (la libérer coûte des tours, l'abandonner
+	  la tue), il **marque** une cible qu'il exécutera au prochain tour
+	  (protéger ou laisser mourir), il punit le regroupement OU la dispersion.
+	  La victoire doit avoir un **coût** : l'état de l'armée en sortant du boss
+	  fait partie de l'histoire. Prérequis : la vétérance (phase 8) — le
       sacrifice ne fait mal que si on tient à ses unités.
     - Techniquement, un boss réutilise les briques existantes : le système de
-      compétences des héros (phase 6) + l'équipe neutre des creeps (phase 7).
-      C'est du contenu premium par-dessus les systèmes, pas un système à part.
+	  compétences des héros (phase 6) + l'équipe neutre des creeps (phase 7).
+	  C'est du contenu premium par-dessus les systèmes, pas un système à part.
 
 ## Feuille de route
 
@@ -89,7 +89,7 @@ Chaque phase doit laisser un jeu jouable.
 
 - [x] **Phase 1** — cœur tactique : carte iso, terrains, déplacement (Dijkstra), combat, IA simple
 - [x] **Phase 2** — types d'unités (Infanterie/Char/Archer), portée, visuels SVG, idle 2 frames
-- [ ] **Phase 3** — conditions de victoire/défaite : élimination + écran de fin, compteur de tours
+- [x] **Phase 3** — conditions de victoire/défaite : élimination + écran de fin, compteur de tours
 - [ ] **Phase 4** — héros : unité unique par camp, victoire par assassinat, XP, +stats par niveau
 - [ ] **Phase 5** — économie : villages capturables, or, recrutement autour du héros
 - [ ] **Phase 6** — compétences de héros (une active par niveau, choix entre deux)
@@ -103,4 +103,5 @@ Godot 4.7, GDScript, rendu GL Compatibility. Carte 12×10 isométrique, 5 terrai
 (coûts de mouvement par type d'unité, bonus de défense), 3 types d'unités avec
 portée et riposte conditionnelle, IA qui garde ses distances avec les unités à
 portée, sprites SVG maison teintés par équipe, animation d'idle 2 frames.
-Aucune condition de victoire pour l'instant — c'est la prochaine brique.
+Victoire/défaite par élimination avec écran de fin et compteur de tours.
+Prochaine brique : le héros (phase 4).

@@ -27,8 +27,8 @@ script = ExtResource("4_cursor")
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -120.0
-offset_right = 120.0
+offset_left = -220.0
+offset_right = 220.0
 offset_bottom = 36.0
 theme_override_font_sizes/font_size = 18
 horizontal_alignment = 1
@@ -65,5 +65,36 @@ offset_bottom = 72.0
 theme_override_font_sizes/font_size = 16
 text = "(-, -)"
 
+[node name="EndScreen" type="ColorRect" parent="UI"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.55)
+
+[node name="EndBox" type="VBoxContainer" parent="UI/EndScreen"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -70.0
+offset_right = 140.0
+offset_bottom = 70.0
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="EndLabel" type="Label" parent="UI/EndScreen/EndBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+horizontal_alignment = 1
+text = "Victoire !"
+
+[node name="RestartButton" type="Button" parent="UI/EndScreen/EndBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "  Rejouer  "
+
 [connection signal="pressed" from="UI/AttackZoneButton" to="." method="_on_attack_zone_pressed"]
 [connection signal="pressed" from="UI/EndTurnButton" to="." method="_end_turn"]
+[connection signal="pressed" from="UI/EndScreen/EndBox/RestartButton" to="." method="_on_restart_pressed"]
