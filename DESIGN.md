@@ -50,9 +50,11 @@ Enseignements :
    lieutenants sans condition de défaite attachée.
 4. **Villages capturables** — +or par tour et soin de l'unité qui s'y trouve.
    Enjeux territoriaux locaux sans économie profonde ni multiples types de bâtiments.
+   *(Amendé le 14/07/2026 : le revenu disparaît avec l'économie — voir décision 12 ;
+   la capture et le soin restent.)*
 5. **Recrutement autour du héros** avec l'or (pas d'usines à la AW) — un seul
    point de production mobile, UI simple, renforce le dilemme exposition/sécurité
-   du héros.
+   du héros. *(Remplacé le 14/07/2026 par les prisonniers des camps — décision 12.)*
 6. **Creeps neutres** — camps d'une équipe neutre passive-agressive (n'attaque
    que si on approche) gardant or/récompenses. Arbitrage farm vs push, donne du
    contenu tactique même avec une IA adverse simple.
@@ -98,6 +100,28 @@ Enseignements :
 	stratégique : les bons joueurs doivent être récompensés par le
 	positionnement. Coût assumé : abandon de la perspective isométrique pour
 	une vue à plat.
+12. **Suppression de l'économie** (décision du 14/07/2026, après playtest de la
+	phase 7). Une économie ouverte récompense le turtling et rend la production
+	d'unités potentiellement infinie ; la rustine classique (limite de tours à
+	la Wesnoth) est refusée — désagréable en tant que joueur, et externe au jeu.
+	L'équité économique n'a de valeur qu'en PvP ; en solo scénarisé, l'IA reçoit
+	son **armée complète au départ** (l'équilibrage se fait par le contenu du
+	scénario) et ne recrute pas. Conséquences :
+	- **Plus d'or nulle part** : revenu des villages, coûts d'unités, bounty des
+	  creeps, bouton Recruter — tout est retiré.
+	- **Les renforts passent par les camps de bandits** : chaque camp garde un
+	  **prisonnier prédéfini par le scénario et visible sur la carte** (icône en
+	  cage). Vaincre le camp le fait rallier le camp du dernier coup porté ; il
+	  apparaît sur le camp, épuisé le tour même. Prédéfini + visible = dilemme
+	  informé (« il nous faut un char, le gros camp en garde un ») et non une
+	  loterie ; même carte, mêmes chances pour tous les joueurs. Si un camp
+	  frustre au playtest, il pourra offrir un choix entre 2 prisonniers (une
+	  ligne de données).
+	- **Camp vaincu = camp de repos** : allié au vainqueur, il soigne +3/tour
+	  comme un village.
+	- Les renforts sont donc finis et payés en risque (PV, position, tempo),
+	  pas en attente — cohérent avec la victoire par assassinat et la vétérance
+	  à venir (unités rares et irremplaçables).
 
 ## Feuille de route
 
@@ -112,21 +136,36 @@ Chaque phase doit laisser un jeu jouable.
 	  priorité ; son héros joue en commandant — il agit après son armée, escorte
 	  sans venir au contact, ne frappe que pour achever une cible, replie sous
 	  40 % de PV, et ne se bat en première ligne que s'il est seul
-- [x] **Phase 5** — économie : 5 villages (capture instantanée par les unités à
-	  pied uniquement, +2 or/tour chacun, soin +3 en y stationnant), or de
-	  départ 10, recrutement sur case libre adjacente au héros sans consommer
-	  son action (recrue épuisée le tour même). **Unités chères et rares**
-	  (choix user, prérequis de la vétérance) : Infanterie 12, Archer 16,
-	  Char 24, pas de revenu de base. IA : recrute le type le moins représenté,
-	  capture les villages à portée, or visible des deux camps
+- [x] **Phase 5** — économie : villages à revenu, or, recrutement au héros.
+	  *(Retirée le 14/07/2026 par la décision 12 — il reste les 5 villages
+	  capturables avec soin +3, sans revenu.)*
 - [x] **Phase 6** — compétences de héros (avancée avant la phase 5) : pool de
 	  4 sorts (Soin, Boule de feu avec friendly fire, Bond, Cri de guerre),
 	  choix entre 2 sorts à chaque level-up, 1 sort/tour, Bond et Cri gratuits,
 	  Soin et Boule de feu = l'action du tour (possible après déplacement),
 	  cooldowns en tours ; IA : auto-soin et boule de feu sur groupe sans allié
-- [ ] **Phase 7** — creeps neutres et récompenses
+- [x] **Phase 7** — creeps neutres (équipe 2, or) : 3 camps — deux petits
+	  (Infanterie + Archer) sur les flancs, un gros au centre (chef Char +
+	  Infanterie + Archer) qui garde le village central. Passif-agressif :
+	  un camp dort tant qu'aucune unité ne finit son tour à ≤ 2 cases (ou
+	  qu'un creep n'est pas blessé, même à distance), puis attaque en restant
+	  leashé à ≤ 3 cases de son centre ; il se rendort une fois rentré au
+	  camp. Tour neutre après celui de l'IA (Joueur → IA → Creeps). XP de
+	  kill normale sur les creeps. Ignorés par les conditions de victoire,
+	  ne capturent pas les villages. *(Le bounty en or de la première version
+	  a été remplacé le jour même par les prisonniers — phase 7bis.)*
+- [x] **Phase 7bis** — les camps remplacent l'économie (décision 12) :
+	  suppression totale de l'or, chaque camp garde un prisonnier prédéfini
+	  et visible (flanc joueur → Archer, flanc IA → Infanterie, camp central →
+	  Char) qui rallie le camp du dernier coup porté et apparaît sur le camp,
+	  épuisé. Camp vaincu = camp de repos allié (+3 PV/tour). L'IA ne recrute
+	  plus : armée complète au départ, à équilibrer par scénario
 - [ ] **Phase 8** — vétérance des unités
-- [ ] **Phase 9+** — scénarios, campagne, recall des vétérans, boss fights en climax de scénario
+- [ ] **Phase 9+** — scénarios, campagne, recall des vétérans, boss fights en
+	  climax de scénario. Aussi (souhaits du 14/07/2026) : **cartes plus
+	  grandes** et **brouillard de guerre** — l'IA n'irait plus en frontal dès
+	  le tour 1 mais attendrait de repérer l'attaque du joueur, ce qui donne
+	  du sens au scouting et aux camps éloignés
 
 ## État technique actuel (rappel)
 
@@ -138,5 +177,11 @@ portée et riposte conditionnelle, IA qui garde ses distances avec les unités �
 portée, sprites SVG maison teintés par équipe, animation d'idle 2 frames.
 Héros par camp (20 PV, XP partagée façon WC3, niveaux avec pips et barre d'XP) ;
 victoire par assassinat du héros adverse (l'élimination totale reste une
-condition secondaire), écran de fin, compteur de tours.
-Prochaine brique : villages, or et recrutement (phase 5).
+condition secondaire), écran de fin, compteur de tours. Sorts de héros
+(`Spells.POOL`), villages capturables à soin seul (`Villages`), pas d'or ni
+de recrutement libre. Creeps neutres (`Creeps`, camps et prisonniers dans
+`Creeps.CAMPS`, tour neutre après l'IA) : vaincre un camp libère son
+prisonnier (détection via le signal `UnitsLayer.unit_killed`) et le camp
+devient un point de repos allié.
+Tests headless dans `tests/` (ex. `godot --headless --path . res://tests/test_phase7.tscn`).
+Prochaine brique : vétérance des unités (phase 8).

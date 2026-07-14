@@ -3,7 +3,10 @@ extends Node2D
 
 enum Type { INFANTRY, TANK, ARCHER, HERO }
 
-const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30)]
+const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30), Color(0.95, 0.74, 0.18)]
+
+# Équipe des creeps : ignorée par les conditions de victoire, ne capture pas
+const NEUTRAL_TEAM := 2
 
 # Stats et coûts de terrain par type d'unité.
 # "range" : portée d'attaque en distance Manhattan.
@@ -11,7 +14,6 @@ const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30)]
 const STATS: Dictionary = {
 	Type.INFANTRY: {
 		"name": "Infanterie", "max_hp": 10, "mp": 3, "atk": 3, "counter": 2, "range": 1,
-		"cost": 12,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
 			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
@@ -20,7 +22,6 @@ const STATS: Dictionary = {
 	},
 	Type.TANK: {
 		"name": "Char", "max_hp": 14, "mp": 5, "atk": 5, "counter": 3, "range": 1,
-		"cost": 24,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
 			GameMap.Terrain.MOUNTAIN: 99, GameMap.Terrain.ROAD: 1,
@@ -29,7 +30,6 @@ const STATS: Dictionary = {
 	},
 	Type.ARCHER: {
 		"name": "Archer", "max_hp": 8, "mp": 3, "atk": 3, "counter": 1, "range": 2,
-		"cost": 16,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
 			GameMap.Terrain.MOUNTAIN: 3, GameMap.Terrain.ROAD: 1,
@@ -38,7 +38,6 @@ const STATS: Dictionary = {
 	},
 	Type.HERO: {
 		"name": "Héros", "max_hp": 20, "mp": 4, "atk": 5, "counter": 4, "range": 1,
-		"cost": 0,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
 			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
@@ -90,6 +89,10 @@ var remaining_mp := 0
 var hp:     int = 10
 var max_hp: int = 10
 
+# Creeps : position d'origine (leash) et nom affiché
+var home_cell := Vector2i.ZERO
+var display_name := ""
+
 # Progression (héros uniquement)
 var xp    := 0
 var level := 1
@@ -111,6 +114,8 @@ func setup(p_type: Type, p_team: int) -> void:
 	remaining_mp = movement_points()
 
 func unit_name() -> String:
+	if display_name != "":
+		return display_name
 	if type == Type.HERO:
 		return "Héros niv. %d" % level
 	return STATS[type]["name"]
@@ -118,9 +123,12 @@ func unit_name() -> String:
 func is_hero() -> bool:
 	return type == Type.HERO
 
-# Seules les unités à pied capturent les villages
+func is_creep() -> bool:
+	return team == NEUTRAL_TEAM
+
+# Seules les unités à pied capturent les villages (jamais les creeps)
 func can_capture() -> bool:
-	return type != Type.TANK
+	return type != Type.TANK and not is_creep()
 
 func movement_points() -> int:
 	return STATS[type]["mp"]

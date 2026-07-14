@@ -1,8 +1,6 @@
 class_name Villages
 extends Node2D
 
-# Revenu par village possédé, au début du tour du propriétaire
-const INCOME_PER_VILLAGE := 2
 # Soin d'une unité qui commence son tour sur un village allié
 const VILLAGE_HEAL := 3
 
@@ -29,16 +27,6 @@ func is_village(cell: Vector2i) -> bool:
 
 func owner_of(cell: Vector2i) -> int:
 	return owners.get(cell, -2)
-
-func village_count(team: int) -> int:
-	var n := 0
-	for cell in owners:
-		if owners[cell] == team:
-			n += 1
-	return n
-
-func income_for(team: int) -> int:
-	return village_count(team) * INCOME_PER_VILLAGE
 
 # Capture instantanée par les unités à pied qui terminent leur mouvement dessus
 func try_capture(unit: Unit) -> bool:

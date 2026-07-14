@@ -1,8 +1,10 @@
 class_name AIPlayer
 extends RefCounted
 
-# Renvoie l'ennemi le plus proche (distance en cases)
-static func find_nearest_enemy(unit: Unit, units_layer: UnitsLayer) -> Unit:
+# Renvoie l'ennemi le plus proche (distance en cases). Les creeps neutres
+# sont ignorés sauf demande explicite : on ne marche pas sur un camp par accident.
+static func find_nearest_enemy(unit: Unit, units_layer: UnitsLayer,
+		include_neutral := false) -> Unit:
 	var nearest: Unit = null
 	var best_dist := 999999
 	for child in units_layer.get_children():
@@ -11,34 +13,13 @@ static func find_nearest_enemy(unit: Unit, units_layer: UnitsLayer) -> Unit:
 		var u := child as Unit
 		if u.team == unit.team:
 			continue
+		if not include_neutral and u.team == Unit.NEUTRAL_TEAM:
+			continue
 		var d := Pathfinder.distance(u.cell, unit.cell)
 		if d < best_dist:
 			best_dist = d
 			nearest = u
 	return nearest
-
-# Renvoie la case atteignable idéale pour attaquer target_cell :
-# vise une distance égale à la portée de l'unité (un archer garde ses
-# distances, une unité de mêlée vient au contact). À écart de portée égal,
-# préfère la case la plus éloignée (plus sûre).
-# Évite les cases déjà occupées par une autre unité.
-# Type à recruter : le moins représenté dans l'armée, puis le moins cher.
-# -1 si rien d'abordable.
-static func pick_recruit(units_layer: UnitsLayer, team: int, gold: int) -> int:
-	var counts := {Unit.Type.INFANTRY: 0, Unit.Type.ARCHER: 0, Unit.Type.TANK: 0}
-	for child in units_layer.get_children():
-		if child is Unit and (child as Unit).team == team \
-				and counts.has((child as Unit).type):
-			counts[(child as Unit).type] += 1
-	var order: Array = counts.keys()
-	order.sort_custom(func(a, b) -> bool:
-		if counts[a] != counts[b]:
-			return counts[a] < counts[b]
-		return Unit.STATS[a]["cost"] < Unit.STATS[b]["cost"])
-	for t: int in order:
-		if gold >= Unit.STATS[t]["cost"]:
-			return t
-	return -1
 
 # Village neutre/ennemi libre le moins coûteux à atteindre, ou (-99,-99)
 static func nearest_capturable_village(unit: Unit, reachable: Dictionary,
@@ -150,6 +131,11 @@ static func _nearest_enemy_dist(cell: Vector2i, team: int,
 			best = mini(best, Pathfinder.distance(cell, (child as Unit).cell))
 	return best
 
+# Renvoie la case atteignable idéale pour attaquer target_cell :
+# vise une distance égale à la portée de l'unité (un archer garde ses
+# distances, une unité de mêlée vient au contact). À écart de portée égal,
+# préfère la case la plus éloignée (plus sûre).
+# Évite les cases déjà occupées par une autre unité.
 static func best_move_towards(unit: Unit, target_cell: Vector2i,
 		reachable: Dictionary, units_layer: UnitsLayer) -> Vector2i:
 	var r := unit.attack_range()

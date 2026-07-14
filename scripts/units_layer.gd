@@ -1,6 +1,10 @@
 class_name UnitsLayer
 extends Node2D
 
+# Émis à chaque unité tuée (combat, riposte ou sort) — sert à détecter
+# les camps de bandits vaincus (libération du prisonnier)
+signal unit_killed(victim: Unit, killer: Unit)
+
 @onready var map: GameMap = $"../GameMap"
 @onready var villages: Villages = get_node_or_null("../Villages")
 
@@ -51,11 +55,13 @@ func get_hero(team: int) -> Unit:
 				return u
 	return null
 
-# XP au héros du camp du tueur : 2 s'il a tué lui-même, 1 sinon
-func _award_kill_xp(killer: Unit) -> void:
+# Comptabilise un kill : XP au héros du camp du tueur (2 s'il a tué
+# lui-même, 1 sinon) + signal unit_killed
+func _on_kill(victim: Unit, killer: Unit) -> void:
 	var hero := get_hero(killer.team)
 	if hero != null:
 		hero.add_xp(2 if killer == hero else 1)
+	unit_killed.emit(victim, killer)
 
 # Unités vivantes d'une équipe (ignore celles en cours de suppression)
 func count_team(team: int) -> int:
@@ -139,7 +145,7 @@ func cast_spell(caster: Unit, id: String, target_cell: Vector2i) -> void:
 				if u.hp <= 0:
 					u.queue_free()
 					if u.team != caster.team:
-						_award_kill_xp(caster)
+						_on_kill(u, caster)
 		"blink":
 			caster.cell = target_cell
 			caster.position = to_local(map.to_global(map.map_to_local(target_cell)))
@@ -183,7 +189,7 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 	if defender.hp <= 0:
 		print("Défenseur éliminé !")
 		defender.queue_free()
-		_award_kill_xp(attacker)
+		_on_kill(defender, attacker)
 		return
 
 	# Contre-attaque : seulement si le défenseur a la portée pour riposter,
@@ -200,7 +206,7 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 	if attacker.hp <= 0:
 		print("Attaquant éliminé !")
 		attacker.queue_free()
-		_award_kill_xp(defender)
+		_on_kill(attacker, defender)
 
 func reset_team(team: int) -> void:
 	for child in get_children():
