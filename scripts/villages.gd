@@ -14,6 +14,7 @@ const START_OWNERS: Dictionary = {
 }
 
 @onready var map: GameMap = $"../GameMap"
+@onready var fog: Fog = get_node_or_null("../Fog")
 
 var owners: Dictionary = {}
 var _tex: Texture2D = preload("res://assets/tiles/village.svg")
@@ -41,6 +42,9 @@ func try_capture(unit: Unit) -> bool:
 
 func _draw() -> void:
 	for cell: Vector2i in owners:
+		# Sous le voile noir, le village n'existe pas encore pour le joueur
+		if fog and not fog.is_explored(cell):
+			continue
 		var p := to_local(map.to_global(map.map_to_local(cell)))
 		draw_texture(_tex, p - Vector2(16.0, 22.0))
 		# Fanion à la couleur du propriétaire (gris = neutre)

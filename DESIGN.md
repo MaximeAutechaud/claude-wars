@@ -11,6 +11,13 @@ qu'on contrôle et qu'on farm. Le cœur systémique est emprunté à Battle for
 Wesnoth, l'habillage tactique à Advance Wars, et la dimension scénarisée de
 Fire Emblem est une évolution possible une fois le cœur en place.
 
+**La partie type visée** (formulée le 14/07/2026) : une campagne qui passe de
+**tableau en tableau** — chaque tableau est une carte faite main, couverte de
+brouillard de guerre, avec ses camps de bandits prédéfinis. Le joueur explore,
+rase les camps pour l'XP et les prisonniers, grossit ses rangs, puis débusque
+et affronte l'armée adverse en climax — l'IA ne se rue pas sur lui, elle
+attend d'être trouvée (ou de le repérer).
+
 ## Analyse des références
 
 | | Advance Wars | Battle for Wesnoth | Fire Emblem |
@@ -122,6 +129,20 @@ Enseignements :
 	- Les renforts sont donc finis et payés en risque (PV, position, tempo),
 	  pas en attente — cohérent avec la victoire par assassinat et la vétérance
 	  à venir (unités rares et irremplaçables).
+13. **Structure de campagne par tableaux** (14/07/2026). Le jeu est une suite
+	de tableaux faits main : carte dessinée, camps et prisonniers prédéfinis,
+	armée adverse placée à la création. Boucle par tableau : explorer (sous
+	brouillard) → farmer les camps → grossir/monter le héros → localiser
+	l'armée adverse → assaut final. Conséquences :
+	- **Le tableau est l'unité de contenu** → il faut un format de scénario en
+	  données (terrain, villages, camps, armées, positions des héros) à la
+	  place du codé-en-dur actuel — règle « séparer système et contenu ».
+	- **Vigilance playtest** : IA attentiste + zéro pression temporelle =
+	  l'optimal sera toujours « raser 100 % des camps puis engager ». C'est le
+	  power fantasy assumé, mais pour éviter que tous les tableaux se jouent
+	  pareil, la pression viendra du design de scénario (camps trop durs pour
+	  l'armée actuelle, patrouilles dans le brouillard, objectifs secondaires,
+	  événements) — jamais d'une limite de tours globale.
 
 ## Feuille de route
 
@@ -160,12 +181,32 @@ Chaque phase doit laisser un jeu jouable.
 	  Char) qui rallie le camp du dernier coup porté et apparaît sur le camp,
 	  épuisé. Camp vaincu = camp de repos allié (+3 PV/tour). L'IA ne recrute
 	  plus : armée complète au départ, à équilibrer par scénario
-- [ ] **Phase 8** — vétérance des unités
-- [ ] **Phase 9+** — scénarios, campagne, recall des vétérans, boss fights en
-	  climax de scénario. Aussi (souhaits du 14/07/2026) : **cartes plus
-	  grandes** et **brouillard de guerre** — l'IA n'irait plus en frontal dès
-	  le tour 1 mais attendrait de repérer l'attaque du joueur, ce qui donne
-	  du sens au scouting et aux camps éloignés
+- [x] **Phase 8** — vétérance : à 3 kills, +1 atk et +2 PV max (remplis à la
+	  promotion), galon doré sur le sprite, « vétéran » dans le nom. Tout le
+	  monde y a droit sauf les héros (qui ont leurs niveaux d'XP) — creeps
+	  inclus : nourrir un camp peut créer un bandit vétéran
+- [ ] **Phase 9** — format de scénario en données (décision 13) : terrain,
+	  villages, camps/prisonniers, armées et héros décrits dans un fichier de
+	  tableau ; la carte actuelle devient le premier tableau. Permet les cartes
+	  plus grandes et la création rapide de contenu. Suivie d'un **tableau fait
+	  main** pour le test grandeur nature de toute la boucle
+- [x] **Phase 10** — brouillard de guerre + IA attentiste (avancée avant la 9) :
+	  deux couches façon Wesnoth — voile noir (jamais exploré, terrain caché)
+	  et brouillard gris (exploré hors de vue : terrain/villages/camps
+	  visibles, unités ennemies et creeps cachées). Vision par type dans
+	  `Unit.STATS` : Infanterie 3, Archer 3, Char 2, Héros 4 (des unités de
+	  reconnaissance dédiées viendront plus tard). Le joueur ne peut cibler
+	  que ce qu'il voit. L'IA voit tout (triche assumée) mais **tient sa
+	  position** — elle ne fait que se défendre — jusqu'au premier contact
+	  (unité joueur à portée de vision d'une unité IA, blessure ou perte) ;
+	  l'alerte est alors définitive : « Repérés ! » et l'armée passe à
+	  l'attaque
+- [ ] **Phase 11+** — campagne : enchaînement des tableaux, persistance
+	  héros/vétérans (recall à la Wesnoth), boss fights en climax de scénario.
+	  Récompense de survie (14/07/2026) : une unité qui termine un tableau
+	  vivante gagne de l'XP de vétérance (+1 kill au compteur, à équilibrer)
+	  en passant au tableau suivant — la vétérance reste au last-hit en cours
+	  de partie, mais garder ses troupes en vie paie aussi
 
 ## État technique actuel (rappel)
 
@@ -183,5 +224,12 @@ de recrutement libre. Creeps neutres (`Creeps`, camps et prisonniers dans
 `Creeps.CAMPS`, tour neutre après l'IA) : vaincre un camp libère son
 prisonnier (détection via le signal `UnitsLayer.unit_killed`) et le camp
 devient un point de repos allié.
+Vétérance à 3 kills (compteur `Unit.kills` incrémenté dans
+`UnitsLayer._on_kill`, constantes `VETERAN_*` dans unit.gd).
+Brouillard de guerre (`Fog`, nœud au-dessus de UnitsLayer) : `explored` /
+`visible_now`, recompute hooké dans spawn/move/kill/cast, unités non joueur
+masquées via `visible`, villages et camps dessinés seulement si explorés ;
+IA attentiste dans main.gd (`ai_alerted`, `AIPlayer.detects_player`).
 Tests headless dans `tests/` (ex. `godot --headless --path . res://tests/test_phase7.tscn`).
-Prochaine brique : vétérance des unités (phase 8).
+Prochaine brique : format de scénario en données (phase 9) + un tableau fait
+main pour le test grandeur nature.

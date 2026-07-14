@@ -7,6 +7,7 @@ const AI_TEAM := 1
 @onready var map: GameMap            = $GameMap
 @onready var villages: Villages      = $Villages
 @onready var creeps: Creeps          = $Creeps
+@onready var fog: Fog                = $Fog
 @onready var camera: Camera2D        = $Camera2D
 @onready var units_layer: UnitsLayer = $UnitsLayer
 @onready var turn_label: Label       = $UI/TurnLabel
@@ -31,6 +32,9 @@ var turn_count     := 1
 var casting_spell  := ""
 var _offered_spells: Array[String] = []
 var creep_phase := false
+# L'armée IA tient sa position tant qu'elle n'a pas repéré le joueur ;
+# le premier contact la met à l'attaque pour toute la partie (décision 13)
+var ai_alerted := false
 
 func _ready() -> void:
 	var mid := map.get_map_size() / 2
@@ -40,6 +44,7 @@ func _ready() -> void:
 	creeps.spawn_camps(units_layer)
 	units_layer.unit_killed.connect(_on_unit_killed)
 	creeps.camp_cleared.connect(_on_camp_cleared)
+	fog.recompute()
 	_start_turn(0)
 	_update_turn_label()
 
@@ -221,11 +226,23 @@ func _start_turn(team: int) -> void:
 				u.hp = mini(u.hp + Villages.VILLAGE_HEAL, u.max_hp)
 				u.queue_redraw()
 
-# Un kill peut être le dernier creep d'un camp → prisonnier libéré
+# Un kill peut être le dernier creep d'un camp → prisonnier libéré.
+# Perdre une unité alerte aussi l'armée IA.
 func _on_unit_killed(victim: Unit, killer: Unit) -> void:
+	if victim.team == AI_TEAM:
+		_alert_ai()
 	if not is_instance_valid(killer):
 		return
 	creeps.on_unit_killed(victim, killer, units_layer)
+
+func _alert_ai() -> void:
+	if ai_alerted:
+		return
+	ai_alerted = true
+	print("L'armée ennemie est alertée !")
+	var hero := units_layer.get_hero(0)
+	if hero != null:
+		_spawn_float_text(hero.cell, "Repérés !")
 
 func _on_camp_cleared(_center: Vector2i, prize: Unit) -> void:
 	_spawn_float_text(prize.cell, "Prisonnier libéré !")
@@ -404,6 +421,10 @@ func _run_ai_turn() -> void:
 			ai_hero.pending_levelups -= 1
 			print("IA apprend : %s" % Spells.POOL[pool[0]]["name"])
 
+	# Attentiste : l'armée s'active au premier contact, définitivement
+	if not ai_alerted and AIPlayer.detects_player(units_layer, AI_TEAM):
+		_alert_ai()
+
 	for unit: Unit in ai_units:
 		if not is_instance_valid(unit) or unit.has_moved:
 			continue
@@ -419,6 +440,17 @@ func _run_ai_turn() -> void:
 
 func _ai_act_unit(unit: Unit) -> void:
 	if not is_instance_valid(unit):
+		return
+
+	# Pas encore alertée : l'unité tient sa position, elle ne fait que
+	# se défendre contre ce qui est déjà à portée (joueur ou creep réveillé)
+	if not ai_alerted:
+		var threats := units_layer.get_enemies_in_range(unit)
+		if not threats.is_empty():
+			units_layer.do_combat(unit, AIPlayer.pick_attack_target(threats))
+		if is_instance_valid(unit):
+			unit.has_moved = true
+			unit.queue_redraw()
 		return
 
 	# Héros IA : comportement de commandant, sauf s'il est seul (il se bat)

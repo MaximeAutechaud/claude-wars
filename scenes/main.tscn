@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://c4v0gpsvkyehu" path="res://scripts/cursor.gd" id="4_cursor"]
 [ext_resource type="Script" path="res://scripts/villages.gd" id="5_villages"]
 [ext_resource type="Script" path="res://scripts/creeps.gd" id="6_creeps"]
+[ext_resource type="Script" path="res://scripts/fog.gd" id="7_fog"]
 
 [node name="Main" type="Node2D" unique_id=2039044375]
 script = ExtResource("1_main")
@@ -24,6 +25,9 @@ script = ExtResource("6_creeps")
 
 [node name="UnitsLayer" type="Node2D" parent="." unique_id=1833406536]
 script = ExtResource("3_ulayer")
+
+[node name="Fog" type="Node2D" parent="."]
+script = ExtResource("7_fog")
 
 [node name="Cursor" type="Node2D" parent="." unique_id=857954790]
 script = ExtResource("4_cursor")

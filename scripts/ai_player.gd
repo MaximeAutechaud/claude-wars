@@ -21,6 +21,24 @@ static func find_nearest_enemy(unit: Unit, units_layer: UnitsLayer,
 			nearest = u
 	return nearest
 
+# L'IA repère-t-elle le joueur ? Vrai si une unité joueur est entrée dans
+# la vision d'une unité IA, ou si une unité IA a été blessée (même de loin).
+# Sert de déclencheur d'alerte : avant, l'armée IA tient sa position.
+static func detects_player(units_layer: UnitsLayer, ai_team: int) -> bool:
+	for child in units_layer.get_children():
+		if not (child is Unit) or child.is_queued_for_deletion():
+			continue
+		var u := child as Unit
+		if u.team != ai_team:
+			continue
+		if u.hp < u.max_hp:
+			return true
+		for other in units_layer.get_children():
+			if other is Unit and (other as Unit).team == Fog.PLAYER_TEAM \
+					and Pathfinder.distance(u.cell, (other as Unit).cell) <= u.vision():
+				return true
+	return false
+
 # Village neutre/ennemi libre le moins coûteux à atteindre, ou (-99,-99)
 static func nearest_capturable_village(unit: Unit, reachable: Dictionary,
 		villages: Villages, units_layer: UnitsLayer) -> Vector2i:

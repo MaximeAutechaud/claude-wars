@@ -11,9 +11,11 @@ const NEUTRAL_TEAM := 2
 # Stats et coûts de terrain par type d'unité.
 # "range" : portée d'attaque en distance Manhattan.
 # "counter" : dégâts de contre-attaque (subis seulement si le défenseur a la portée).
+# "vision" : rayon de vision sous brouillard de guerre.
 const STATS: Dictionary = {
 	Type.INFANTRY: {
 		"name": "Infanterie", "max_hp": 10, "mp": 3, "atk": 3, "counter": 2, "range": 1,
+		"vision": 3,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
 			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
@@ -22,6 +24,7 @@ const STATS: Dictionary = {
 	},
 	Type.TANK: {
 		"name": "Char", "max_hp": 14, "mp": 5, "atk": 5, "counter": 3, "range": 1,
+		"vision": 2,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
 			GameMap.Terrain.MOUNTAIN: 99, GameMap.Terrain.ROAD: 1,
@@ -30,6 +33,7 @@ const STATS: Dictionary = {
 	},
 	Type.ARCHER: {
 		"name": "Archer", "max_hp": 8, "mp": 3, "atk": 3, "counter": 1, "range": 2,
+		"vision": 3,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
 			GameMap.Terrain.MOUNTAIN: 3, GameMap.Terrain.ROAD: 1,
@@ -38,6 +42,7 @@ const STATS: Dictionary = {
 	},
 	Type.HERO: {
 		"name": "Héros", "max_hp": 20, "mp": 4, "atk": 5, "counter": 4, "range": 1,
+		"vision": 4,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
 			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
@@ -52,6 +57,11 @@ const XP_THRESHOLDS := [2, 5, 9, 14]
 const MAX_LEVEL := 5
 const LEVELUP_HP := 4
 const LEVELUP_ATK := 1
+
+# ── Vétérance (toutes les unités sauf le héros, creeps inclus) ───────────────
+const VETERAN_KILLS := 3   # kills pour la promotion
+const VETERAN_ATK := 1
+const VETERAN_HP := 2      # PV max ajoutés, remplis à la promotion
 
 # Deux frames d'idle par type, alternées en continu (style Advance Wars)
 const TEXTURES: Dictionary = {
@@ -93,6 +103,10 @@ var max_hp: int = 10
 var home_cell := Vector2i.ZERO
 var display_name := ""
 
+# Vétérance
+var kills := 0
+var veteran := false
+
 # Progression (héros uniquement)
 var xp    := 0
 var level := 1
@@ -114,11 +128,12 @@ func setup(p_type: Type, p_team: int) -> void:
 	remaining_mp = movement_points()
 
 func unit_name() -> String:
-	if display_name != "":
-		return display_name
 	if type == Type.HERO:
 		return "Héros niv. %d" % level
-	return STATS[type]["name"]
+	var n: String = display_name if display_name != "" else STATS[type]["name"]
+	if veteran:
+		n += " vétéran"
+	return n
 
 func is_hero() -> bool:
 	return type == Type.HERO
@@ -155,6 +170,23 @@ func unlearned_spells() -> Array[String]:
 func counter_atk() -> int:
 	return STATS[type]["counter"] + _counter_bonus
 
+# Comptabilise un kill ; à VETERAN_KILLS l'unité passe vétéran
+# (+1 atk, +2 PV max remplis, galon doré). Le héros a ses niveaux d'XP.
+func add_kill() -> void:
+	if type == Type.HERO:
+		return
+	kills += 1
+	if veteran or kills < VETERAN_KILLS:
+		return
+	veteran = true
+	max_hp += VETERAN_HP
+	hp = mini(hp + VETERAN_HP, max_hp)
+	_atk_bonus += VETERAN_ATK
+	print("%s est promu vétéran ! (+%d atk, +%d PV max)"
+			% [unit_name(), VETERAN_ATK, VETERAN_HP])
+	_level_up_flash()
+	queue_redraw()
+
 func add_xp(amount: int) -> void:
 	if type != Type.HERO:
 		return
@@ -178,6 +210,9 @@ func _level_up_flash() -> void:
 
 func attack_range() -> int:
 	return STATS[type]["range"]
+
+func vision() -> int:
+	return STATS[type]["vision"]
 
 var _idle_frame := 0
 
@@ -214,6 +249,13 @@ func _draw() -> void:
 	var by := 9.0
 	draw_rect(Rect2(-bw * 0.5, by, bw, bh), Color(0.35, 0.0, 0.0))
 	draw_rect(Rect2(-bw * 0.5, by, bw * hp / float(max_hp), bh), Color(0.15, 0.85, 0.2))
+
+	# Galon doré du vétéran au-dessus du sprite
+	if veteran:
+		var gold := Color(1.0, 0.82, 0.15)
+		draw_polyline(PackedVector2Array([
+			Vector2(7, -21), Vector2(11, -16.5), Vector2(15, -21),
+		]), gold, 2.0)
 
 	if type == Type.HERO:
 		# Barre d'XP dorée sous la barre de PV

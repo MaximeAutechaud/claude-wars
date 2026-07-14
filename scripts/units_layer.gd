@@ -7,6 +7,7 @@ signal unit_killed(victim: Unit, killer: Unit)
 
 @onready var map: GameMap = $"../GameMap"
 @onready var villages: Villages = get_node_or_null("../Villages")
+@onready var fog: Fog = get_node_or_null("../Fog")
 
 var reachable_cells: Dictionary = {}
 var attack_cells: Dictionary = {}   # cases hors portée de mouvement mais attaquables
@@ -44,6 +45,8 @@ func spawn(cell: Vector2i, team: int, type: Unit.Type) -> Unit:
 	u.cell = cell
 	add_child(u)
 	u.position = to_local(map.to_global(map.map_to_local(cell)))
+	if fog:
+		fog.recompute()
 	return u
 
 # Héros vivant d'une équipe, ou null s'il est mort
@@ -55,13 +58,16 @@ func get_hero(team: int) -> Unit:
 				return u
 	return null
 
-# Comptabilise un kill : XP au héros du camp du tueur (2 s'il a tué
-# lui-même, 1 sinon) + signal unit_killed
+# Comptabilise un kill : compteur de vétérance du tueur, XP au héros du
+# camp du tueur (2 s'il a tué lui-même, 1 sinon) + signal unit_killed
 func _on_kill(victim: Unit, killer: Unit) -> void:
+	killer.add_kill()
 	var hero := get_hero(killer.team)
 	if hero != null:
 		hero.add_xp(2 if killer == hero else 1)
 	unit_killed.emit(victim, killer)
+	if fog:
+		fog.recompute()
 
 # Unités vivantes d'une équipe (ignore celles en cours de suppression)
 func count_team(team: int) -> int:
@@ -160,8 +166,11 @@ func cast_spell(caster: Unit, id: String, target_cell: Vector2i) -> void:
 	caster.cooldowns[id] = def["cooldown"]
 	caster.has_cast = true
 	caster.queue_redraw()
+	if fog:
+		fog.recompute()   # Bond déplace le lanceur, la vision bouge
 
-# Ennemis attaquables par `unit` depuis sa case (distance Manhattan <= portée)
+# Ennemis attaquables par `unit` depuis sa case (distance <= portée).
+# Le joueur ne peut viser que ce qu'il voit ; l'IA et les creeps voient tout.
 func get_enemies_in_range(unit: Unit) -> Array[Unit]:
 	var enemies: Array[Unit] = []
 	for child in get_children():
@@ -169,6 +178,8 @@ func get_enemies_in_range(unit: Unit) -> Array[Unit]:
 			continue
 		var u := child as Unit
 		if u.team == unit.team:
+			continue
+		if unit.team == Fog.PLAYER_TEAM and fog and not fog.is_visible_now(u.cell):
 			continue
 		var d := Pathfinder.distance(unit.cell, u.cell)
 		if d >= 1 and d <= unit.attack_range():
@@ -231,6 +242,8 @@ func move_unit(unit: Unit, target: Vector2i, cost: int = -1) -> void:
 	unit.queue_redraw()
 	if villages:
 		villages.try_capture(unit)
+	if fog:
+		fog.recompute()
 	clear_reachable()
 
 func _draw() -> void:

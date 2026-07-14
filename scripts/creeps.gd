@@ -34,6 +34,7 @@ const CAMPS: Array = [
 ]
 
 @onready var map: GameMap = $"../GameMap"
+@onready var fog: Fog = get_node_or_null("../Fog")
 
 # camp : { center, prize, owner, awake, hp_seen, units: Array[Unit] }
 # owner = -1 tant que le camp tient, puis l'équipe qui l'a vaincu (repos).
@@ -222,6 +223,9 @@ func _nearest_enemy(cell: Vector2i, units_layer: UnitsLayer, max_dist := 9999) -
 func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	for camp: Dictionary in camps:
+		# Le camp (fanion, cage, sommeil) n'apparaît qu'une fois exploré
+		if fog and not fog.is_explored(camp["center"]):
+			continue
 		var p := to_local(map.to_global(map.map_to_local(camp["center"])))
 		var owner := int(camp["owner"])
 		if owner >= 0:
