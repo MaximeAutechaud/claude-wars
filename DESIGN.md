@@ -46,6 +46,10 @@ Enseignements :
    perdre le sien. Contrairement au leader Wesnoth (planqué au donjon), le héros
    est une pièce spectaculaire à la WC3 : XP sur les kills, niveaux, et à chaque
    niveau un choix entre deux améliorations/compétences.
+   *(Amendé le 15/07/2026, playtest phase 9 : la victoire vise le **chef**
+   adverse — son héros, ou son **boss** si le scénario fait mener l'armée par
+   un boss (`UnitsLayer.get_leader`). Le boss-climax n'est pas un camp neutre
+   optionnel : c'est l'ennemi à abattre pour finir le tableau.)*
 3. **Compétences actives de héros** — cooldown en tours, **un seul sort par
    tour**. Coût par sort : les sorts utilitaires (Bond, Cri de guerre) sont
    **gratuits** (le héros garde son attaque — fantasme d'engage à la WC3),
@@ -143,6 +147,30 @@ Enseignements :
 	  pareil, la pression viendra du design de scénario (camps trop durs pour
 	  l'armée actuelle, patrouilles dans le brouillard, objectifs secondaires,
 	  événements) — jamais d'une limite de tours globale.
+14. **Outils de survie** (16/07/2026). Le jeu est punitif et la mort d'une
+	unité coûte cher (vétérance, renforts finis) : le joueur doit pouvoir
+	*gérer* la survivabilité. Le levier n'est pas le soin (l'attrition entre
+	les combats est déjà résolue par les villages/camps de repos et l'absence
+	de pression temporelle — les morts arrivent en combat, en 1-2 tours de
+	burst) mais la prévention et le contrôle du focus. Trois mécaniques :
+	- **Prévision de dégâts** : au survol d'une cible attaquable, l'issue
+	  exacte du combat est affichée (« Attaque : −4 / Riposte : −2 », fatalité
+	  signalée). Le combat étant déterministe (décision 8), chaque mort
+	  devient une erreur de lecture *évitable* — condition du « punitif mais
+	  juste ». Calculs partagés avec `do_combat` (`preview_combat`).
+	- **Posture Défendre** : remplace l'action du tour, +2 déf jusqu'à la
+	  prochaine action de l'unité (bouger/attaquer/sort la casse, riposter
+	  non). Donne un sens au tour « je tiens la ligne » ; l'IA non alertée se
+	  met en garde (garnison), bouclier dessiné sur le sprite.
+	- **Zone de contrôle (ZoC)** façon Wesnoth : entrer sur une case voisine
+	  d'un ennemi (visible) stoppe net le mouvement ; les cases occupées par
+	  un ennemi sont infranchissables. Deux unités contrôlent un couloir →
+	  le body-block devient une vraie ligne de front, une retraite se couvre.
+	  Règle symétrique (l'IA et les creeps la subissent), le Bond l'ignore
+	  (mais atterrir en ZoC coupe les PM restants), et les ennemis cachés
+	  dans le brouillard n'exercent pas de ZoC pour le joueur (pas de fuite
+	  d'information). Si l'arrêt net s'avère trop rigide au playtest,
+	  l'alternative douce est le surcoût de PM à la Civilization.
 
 ## Feuille de route
 
@@ -185,11 +213,31 @@ Chaque phase doit laisser un jeu jouable.
 	  promotion), galon doré sur le sprite, « vétéran » dans le nom. Tout le
 	  monde y a droit sauf les héros (qui ont leurs niveaux d'XP) — creeps
 	  inclus : nourrir un camp peut créer un bandit vétéran
-- [ ] **Phase 9** — format de scénario en données (décision 13) : terrain,
-	  villages, camps/prisonniers, armées et héros décrits dans un fichier de
-	  tableau ; la carte actuelle devient le premier tableau. Permet les cartes
-	  plus grandes et la création rapide de contenu. Suivie d'un **tableau fait
-	  main** pour le test grandeur nature de toute la boucle
+- [x] **Phase 9** — format de scénario en données (décision 13) : le tableau
+	  vit dans `Scenario.CURRENT` (données pures : terrain en strings — un
+	  caractère par case —, villages, armées, camps/prisonniers ; types
+	  d'unités en strings via `Unit.TYPE_BY_ID`, portable vers des fichiers
+	  plus tard). Premier tableau fait main : **« La Marche du Bord »**,
+	  22×16 — un fleuve infranchissable coupé par deux ponts (routes), 8
+	  villages, 5 camps (11 creeps — dont un gardant la sortie du pont nord
+	  et le camp du gué, le plus dur, qui garde le village central et
+	  récompense d'un prisonnier Char *vétéran*), et l'armée ennemie (6
+	  unités) menée par le premier boss : **Le Fossoyeur** — c'est lui le
+	  chef à abattre pour gagner (décisions 2 et 10). Mécaniques du boss
+	  (30 PV, `"type": "boss"` dans le scénario, logique partagée dans
+	  `boss.gd`) : **malédiction télégraphiée** un tour sur deux (zone
+	  violette affichée pendant tout le tour du joueur, 5 dégâts au tour
+	  suivant à tout ce qui y est resté — ses propres troupes comprises) et
+	  **phases à 66 %/33 %** où il sacrifie son soldat le plus faible
+	  (+6 PV, +1 atk permanent). Tuer un boss rapporte +3 XP bonus au héros.
+	  Effectifs resserrés après playtest du 15/07 (« trop d'unités, l'XP
+	  monte trop vite ») : joueur 4, IA 6, creeps 11 ; le galon de vétéran a
+	  été refait (deux chevrons dorés pleins au-dessus de la tête, lisibles).
+	  La grande carte a imposé la **caméra libre** : flèches ou WASD/ZQSD
+	  (touches physiques), zoom molette, caméra qui démarre sur le héros.
+	  Outils : capture « carte entière révélée »
+	  (`tests/screenshot_full.tscn`) pour vérifier un tableau à sa création,
+	  test de fumée de la boucle complète (`tests/test_smoke.tscn`)
 - [x] **Phase 10** — brouillard de guerre + IA attentiste (avancée avant la 9) :
 	  deux couches façon Wesnoth — voile noir (jamais exploré, terrain caché)
 	  et brouillard gris (exploré hors de vue : terrain/villages/camps
@@ -201,6 +249,13 @@ Chaque phase doit laisser un jeu jouable.
 	  (unité joueur à portée de vision d'une unité IA, blessure ou perte) ;
 	  l'alerte est alors définitive : « Repérés ! » et l'armée passe à
 	  l'attaque
+- [x] **Phase 10b** — outils de survie (décision 14) : prévision de dégâts au
+	  survol (`UnitsLayer.preview_combat`, mêmes calculs que `do_combat`),
+	  posture Défendre (+2 déf jusqu'à la prochaine action, bouton dédié,
+	  bouclier sur le sprite, garnison IA en garde avant l'alerte), zone de
+	  contrôle façon Wesnoth (`Pathfinder.get_reachable` + ctx de
+	  `UnitsLayer.move_context` : arrêt en case voisine d'un ennemi visible,
+	  cases ennemies infranchissables, PM coupés à l'entrée — Bond compris)
 - [ ] **Phase 11+** — campagne : enchaînement des tableaux, persistance
 	  héros/vétérans (recall à la Wesnoth), boss fights en climax de scénario.
 	  Récompense de survie (14/07/2026) : une unité qui termine un tableau
@@ -210,12 +265,30 @@ Chaque phase doit laisser un jeu jouable.
 
 ## État technique actuel (rappel)
 
-Godot 4.7, GDScript, rendu GL Compatibility. Carte 12×10 **hexagonale**
+Godot 4.7, GDScript, rendu GL Compatibility. Carte **hexagonale**
 (flat-top, odd-q — toute la géométrie passe par `Pathfinder.get_neighbors` et
-`Pathfinder.distance`), 5 terrains
+`Pathfinder.distance`) chargée depuis `Scenario.CURRENT` (taille libre ;
+tableau actuel : « La Marche du Bord », 22×16), 5 terrains
 (coûts de mouvement par type d'unité, bonus de défense), 3 types d'unités avec
-portée et riposte conditionnelle, IA qui garde ses distances avec les unités à
+portée et riposte conditionnelle (+ le type `BOSS` pour les boss de camp), IA
+qui garde ses distances avec les unités à
 portée, sprites SVG maison teintés par équipe, animation d'idle 2 frames.
+Caméra libre (flèches/WASD physique, zoom molette, clamp aux limites de la
+carte). Fiche d'unité (`UnitPanel` dans main.tscn, `main._show_unit_panel`) :
+portrait teinté équipe, nom, PV, stats (attaque/riposte/portée/PM/vision/
+défense totale avec garde), grade de vétérance (ou phase de boss), XP du
+héros — affichée à la sélection et au clic d'inspection sur toute unité
+visible (le brouillard bloque l'inspection). Survie (décision 14) :
+`preview_combat`/`attack_damage`/`counter_damage`/`defense_of` dans
+UnitsLayer (partagés combat/prévision), `Unit.defending` +
+`Unit.DEFEND_BONUS`, ZoC via `move_context` (zoc/blocked) passée à
+`Pathfinder.get_reachable` par tous les appelants (joueur, IA, creeps) ;
+`move_unit` et le Bond coupent les PM à l'arrivée en ZoC. Tests :
+`tests/test_survival.tscn`. Boss (`boss.gd`, statique, état sur l'unité : `doom_cells` /
+`doom_armed` / `boss_phase`) : malédiction télégraphiée (zones dessinées en
+violet par `UnitsLayer`), phases avec sacrifice. Un boss peut mener une armée
+(chef à abattre, `get_leader`) ou habiter un camp neutre ; prisonnier vétéran
+via `prize_veteran`.
 Héros par camp (20 PV, XP partagée façon WC3, niveaux avec pips et barre d'XP) ;
 victoire par assassinat du héros adverse (l'élimination totale reste une
 condition secondaire), écran de fin, compteur de tours. Sorts de héros
@@ -230,6 +303,13 @@ Brouillard de guerre (`Fog`, nœud au-dessus de UnitsLayer) : `explored` /
 `visible_now`, recompute hooké dans spawn/move/kill/cast, unités non joueur
 masquées via `visible`, villages et camps dessinés seulement si explorés ;
 IA attentiste dans main.gd (`ai_alerted`, `AIPlayer.detects_player`).
-Tests headless dans `tests/` (ex. `godot --headless --path . res://tests/test_phase7.tscn`).
-Prochaine brique : format de scénario en données (phase 9) + un tableau fait
-main pour le test grandeur nature.
+Tests headless dans `tests/` (ex. `godot --headless --path . res://tests/test_phase7.tscn` ;
+`test_phase9` couvre le scénario et le boss, `test_smoke` joue deux tours
+complets ; `screenshot_full.tscn` capture la carte entière révélée).
+Vigilance connue : l'IA alertée navigue à la distance hexagonale, pas au
+chemin — face au fleuve, ses unités peuvent longer la rive au lieu de
+rejoindre un pont (peu visible tant que le climax se joue près de sa base,
+à traiter si un tableau l'exige).
+Prochaine brique : playtest grandeur nature du tableau « La Marche du Bord »
+(équilibrage des camps, du boss et de l'assaut final), puis la campagne
+(phase 11 : enchaînement de tableaux, persistance des vétérans).

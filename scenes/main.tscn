@@ -58,6 +58,19 @@ offset_right = 110.0
 offset_bottom = -12.0
 text = "Zone d'attaque"
 
+[node name="DefendButton" type="Button" parent="UI"]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 120.0
+offset_top = -52.0
+offset_right = 290.0
+offset_bottom = -12.0
+text = "Défendre (+2 déf)"
+
 [node name="EndTurnButton" type="Button" parent="UI" unique_id=1288070812]
 anchors_preset = 1
 anchor_left = 1.0
@@ -114,6 +127,62 @@ text = "Sort 1"
 layout_mode = 2
 text = "Sort 2"
 
+[node name="UnitPanel" type="PanelContainer" parent="UI"]
+visible = false
+offset_left = 10.0
+offset_top = 80.0
+offset_right = 230.0
+
+[node name="UnitBox" type="VBoxContainer" parent="UI/UnitPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TopRow" type="HBoxContainer" parent="UI/UnitPanel/UnitBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Portrait" type="TextureRect" parent="UI/UnitPanel/UnitBox/TopRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 64)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameBox" type="VBoxContainer" parent="UI/UnitPanel/UnitBox/TopRow"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="NameLabel" type="Label" parent="UI/UnitPanel/UnitBox/TopRow/NameBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Unité"
+
+[node name="TeamLabel" type="Label" parent="UI/UnitPanel/UnitBox/TopRow/NameBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Équipe"
+
+[node name="HPLabel" type="Label" parent="UI/UnitPanel/UnitBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "PV : 10 / 10"
+
+[node name="StatsLabel" type="Label" parent="UI/UnitPanel/UnitBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Stats"
+
+[node name="GradeLabel" type="Label" parent="UI/UnitPanel/UnitBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1, 0.82, 0.15, 1)
+text = "Grade"
+
+[node name="XPLabel" type="Label" parent="UI/UnitPanel/UnitBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1, 0.82, 0.15, 1)
+text = "XP"
+
 [node name="EndScreen" type="ColorRect" parent="UI" unique_id=1072770120]
 visible = false
 anchors_preset = 15
@@ -146,5 +215,6 @@ size_flags_horizontal = 4
 text = "  Rejouer  "
 
 [connection signal="pressed" from="UI/AttackZoneButton" to="." method="_on_attack_zone_pressed"]
+[connection signal="pressed" from="UI/DefendButton" to="." method="_on_defend_pressed"]
 [connection signal="pressed" from="UI/EndTurnButton" to="." method="_end_turn"]
 [connection signal="pressed" from="UI/EndScreen/EndBox/RestartButton" to="." method="_on_restart_pressed"]

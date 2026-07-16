@@ -21,6 +21,7 @@ func _ready() -> void:
 
 	var units: UnitsLayer = main.get_node("UnitsLayer")
 	var creeps: Creeps = main.get_node("Creeps")
+	var map: GameMap = main.get_node("GameMap")
 
 	# ── Promotion d'une infanterie joueur après 3 kills ──────────────────
 	var attacker := units.spawn(Vector2i(8, 8), 0, Unit.Type.INFANTRY)
@@ -51,7 +52,11 @@ func _ready() -> void:
 
 	# ── Un creep peut devenir vétéran (« ne nourris pas le camp ») ───────
 	var creep: Unit = creeps.alive_units(creeps.camps[0])[0]
-	var prey_cells: Array[Vector2i] = [Vector2i(11, 0), Vector2i(10, 1), Vector2i(10, 2)]
+	var prey_cells: Array[Vector2i] = []
+	for nb in Pathfinder.get_neighbors(creep.cell):
+		if prey_cells.size() < 3 and map.is_in_bounds(nb) \
+				and units.get_unit_at(nb) == null:
+			prey_cells.append(nb)
 	for cell in prey_cells:
 		var prey := units.spawn(cell, 0, Unit.Type.INFANTRY)
 		prey.hp = 1

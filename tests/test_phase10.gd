@@ -26,16 +26,16 @@ func _ready() -> void:
 	# ── Voile initial ────────────────────────────────────────────────────
 	var hero := units.get_hero(0)
 	check(fog.is_explored(hero.cell), "la zone de départ du joueur est explorée")
-	check(fog.is_explored(Vector2i(1, 2)), "le village de départ est visible")
-	var ai_hero := units.get_hero(ai_team)
-	check(not fog.is_explored(ai_hero.cell), "le camp IA est sous le voile")
-	check(not ai_hero.visible, "le héros IA est masqué")
+	check(fog.is_explored(Vector2i(2, 2)), "le village de départ est visible")
+	var ai_leader := units.get_leader(ai_team)
+	check(not fog.is_explored(ai_leader.cell), "le camp IA est sous le voile")
+	check(not ai_leader.visible, "le chef IA (le Fossoyeur) est masqué")
 	check(hero.visible, "les unités du joueur restent affichées")
-	check(not fog.is_explored(Vector2i(1, 8)), "le camp de bandits sud est sous le voile")
+	check(not fog.is_explored(Vector2i(12, 8)), "le camp du gué est sous le voile")
 
 	# ── IA attentiste : personne en vue, elle tient position ─────────────
 	check(not AIPlayer.detects_player(units, ai_team), "l'IA ne détecte personne au départ")
-	var u1 := units.get_unit_at(Vector2i(10, 8))
+	var u1 := units.get_unit_at(Vector2i(18, 13))
 	var u1_home := u1.cell
 	main._ai_act_unit(u1)
 	check(u1.cell == u1_home, "unité IA non alertée : tient sa position")
@@ -50,10 +50,10 @@ func _ready() -> void:
 
 	# ── Exploration en marchant + détection par proximité ────────────────
 	var scout := units.get_unit_at(Vector2i(1, 1))
-	scout.cell = Vector2i(8, 6)
+	scout.cell = Vector2i(17, 12)
 	fog.recompute()
-	check(fog.is_explored(Vector2i(8, 6)), "la case atteinte est explorée")
-	var u_close := units.get_unit_at(Vector2i(9, 6))
+	check(fog.is_explored(Vector2i(17, 12)), "la case atteinte est explorée")
+	var u_close := units.get_unit_at(Vector2i(18, 12))
 	check(u_close.visible, "l'unité IA entrée dans la vision devient visible")
 	check(AIPlayer.detects_player(units, ai_team), "le joueur à portée de vision est détecté")
 

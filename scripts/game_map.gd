@@ -1,13 +1,17 @@
 class_name GameMap
 extends TileMapLayer
 
-const MAP_W := 12
-const MAP_H := 10
 # Hexagone flat-top : largeur pointe à pointe, hauteur bord à bord (≈ W·√3/2)
 const TILE_W := 64
 const TILE_H := 56
 
 enum Terrain { PLAINS, FOREST, MOUNTAIN, ROAD, RIVER }
+
+# Caractères du format de tableau (Scenario.CURRENT["terrain"])
+const TERRAIN_CHARS: Dictionary = {
+	"P": Terrain.PLAINS, "F": Terrain.FOREST, "M": Terrain.MOUNTAIN,
+	"R": Terrain.ROAD,   "W": Terrain.RIVER,
+}
 
 const TERRAIN_DEFENSE: Dictionary = {
 	Terrain.PLAINS:   0,
@@ -25,8 +29,9 @@ const TERRAIN_TEXTURE: Dictionary = {
 	Terrain.RIVER:    preload("res://assets/tiles/river.svg"),
 }
 
-# grid[col][row] = valeur Terrain
+# grid[col][row] = valeur Terrain — chargée depuis le scénario courant
 var grid: Array = []
+var map_size := Vector2i.ZERO
 
 func _ready() -> void:
 	_build_tileset()
@@ -50,26 +55,19 @@ func _build_tileset() -> void:
 	tile_set = ts
 
 func _init_grid() -> void:
-	grid.resize(MAP_W)
-	for col in MAP_W:
+	var rows: Array = Scenario.CURRENT["terrain"]
+	map_size = Vector2i((rows[0] as String).length(), rows.size())
+	grid.resize(map_size.x)
+	for col in map_size.x:
 		grid[col] = []
-		grid[col].resize(MAP_H)
-		for row in MAP_H:
-			grid[col][row] = Terrain.PLAINS
-
-	for pos in [Vector2i(2,2), Vector2i(3,2), Vector2i(3,3), Vector2i(4,3), Vector2i(2,4)]:
-		grid[pos.x][pos.y] = Terrain.FOREST
-	for pos in [Vector2i(5,1), Vector2i(5,2), Vector2i(6,2)]:
-		grid[pos.x][pos.y] = Terrain.MOUNTAIN
-	for pos in [Vector2i(7,3), Vector2i(7,4), Vector2i(7,5), Vector2i(7,6)]:
-		grid[pos.x][pos.y] = Terrain.RIVER
-	for pos in [Vector2i(3,6), Vector2i(4,6), Vector2i(5,6), Vector2i(6,6)]:
-		grid[pos.x][pos.y] = Terrain.ROAD
+		grid[col].resize(map_size.y)
+		for row in map_size.y:
+			grid[col][row] = TERRAIN_CHARS[(rows[row] as String)[col]]
 
 func _paint_grid() -> void:
 	clear()
-	for col in MAP_W:
-		for row in MAP_H:
+	for col in map_size.x:
+		for row in map_size.y:
 			var t: int = grid[col][row]
 			set_cell(Vector2i(col, row), t, Vector2i.ZERO)
 
@@ -79,13 +77,13 @@ func get_terrain(cell: Vector2i) -> int:
 	return grid[cell.x][cell.y]
 
 func is_in_bounds(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.x < MAP_W and cell.y >= 0 and cell.y < MAP_H
+	return cell.x >= 0 and cell.x < map_size.x and cell.y >= 0 and cell.y < map_size.y
 
 func get_defense_bonus(cell: Vector2i) -> int:
 	return TERRAIN_DEFENSE.get(get_terrain(cell), 0)
 
 func get_map_size() -> Vector2i:
-	return Vector2i(MAP_W, MAP_H)
+	return map_size
 
 # Sommets d'un hexagone flat-top centré sur `center` (hw/hh = demi-taille)
 static func hex_corners(center: Vector2, hw: float, hh: float) -> PackedVector2Array:

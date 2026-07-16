@@ -1,7 +1,13 @@
 class_name Unit
 extends Node2D
 
-enum Type { INFANTRY, TANK, ARCHER, HERO }
+enum Type { INFANTRY, TANK, ARCHER, HERO, BOSS }
+
+# Ids du format de scénario (Scenario.CURRENT) vers les types
+const TYPE_BY_ID: Dictionary = {
+	"infantry": Type.INFANTRY, "tank": Type.TANK, "archer": Type.ARCHER,
+	"hero": Type.HERO, "boss": Type.BOSS,
+}
 
 const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30), Color(0.95, 0.74, 0.18)]
 
@@ -49,7 +55,19 @@ const STATS: Dictionary = {
 			GameMap.Terrain.RIVER: 99,
 		},
 	},
+	Type.BOSS: {
+		"name": "Boss", "max_hp": 30, "mp": 3, "atk": 6, "counter": 4, "range": 1,
+		"vision": 3,
+		"costs": {
+			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
+			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
+			GameMap.Terrain.RIVER: 99,
+		},
+	},
 }
+
+# XP supplémentaire créditée au héros du camp qui abat un boss
+const BOSS_XP_BONUS := 3
 
 # ── Progression du héros ─────────────────────────────────────────────────────
 # XP cumulée requise pour atteindre les niveaux 2, 3, 4, 5 (cap)
@@ -62,6 +80,11 @@ const LEVELUP_ATK := 1
 const VETERAN_KILLS := 3   # kills pour la promotion
 const VETERAN_ATK := 1
 const VETERAN_HP := 2      # PV max ajoutés, remplis à la promotion
+
+# ── Posture Défendre (décision 14) ───────────────────────────────────────────
+# Se mettre en garde remplace l'action du tour ; le bonus de défense tient
+# jusqu'à la prochaine action de l'unité (bouger, attaquer ou lancer un sort).
+const DEFEND_BONUS := 2
 
 # Deux frames d'idle par type, alternées en continu (style Advance Wars)
 const TEXTURES: Dictionary = {
@@ -80,6 +103,10 @@ const TEXTURES: Dictionary = {
 	Type.HERO: [
 		preload("res://assets/units/hero.svg"),
 		preload("res://assets/units/hero_2.svg"),
+	],
+	Type.BOSS: [
+		preload("res://assets/units/boss.svg"),
+		preload("res://assets/units/boss_2.svg"),
 	],
 }
 
@@ -106,6 +133,14 @@ var display_name := ""
 # Vétérance
 var kills := 0
 var veteran := false
+
+# Boss (état des mécaniques de boss.gd)
+var doom_cells: Array[Vector2i] = []
+var doom_armed := false
+var boss_phase := 0
+
+# Posture Défendre — cassée par toute nouvelle action (voir UnitsLayer)
+var defending := false
 
 # Progression (héros uniquement)
 var xp    := 0
@@ -138,12 +173,16 @@ func unit_name() -> String:
 func is_hero() -> bool:
 	return type == Type.HERO
 
+func is_boss() -> bool:
+	return type == Type.BOSS
+
 func is_creep() -> bool:
 	return team == NEUTRAL_TEAM
 
-# Seules les unités à pied capturent les villages (jamais les creeps)
+# Seules les unités à pied capturent les villages (jamais les creeps ni
+# les boss — un boss reste concentré sur le combat)
 func can_capture() -> bool:
-	return type != Type.TANK and not is_creep()
+	return type != Type.TANK and type != Type.BOSS and not is_creep()
 
 func movement_points() -> int:
 	return STATS[type]["mp"]
@@ -170,10 +209,16 @@ func unlearned_spells() -> Array[String]:
 func counter_atk() -> int:
 	return STATS[type]["counter"] + _counter_bonus
 
+# Bonus d'attaque permanent (enrage de boss, futurs objets…)
+func gain_atk(amount: int) -> void:
+	_atk_bonus += amount
+	queue_redraw()
+
 # Comptabilise un kill ; à VETERAN_KILLS l'unité passe vétéran
-# (+1 atk, +2 PV max remplis, galon doré). Le héros a ses niveaux d'XP.
+# (+1 atk, +2 PV max remplis, galon doré). Le héros a ses niveaux d'XP,
+# le boss a ses phases : ni l'un ni l'autre ne cumule de vétérance.
 func add_kill() -> void:
-	if type == Type.HERO:
+	if type == Type.HERO or type == Type.BOSS:
 		return
 	kills += 1
 	if veteran or kills < VETERAN_KILLS:
@@ -250,12 +295,33 @@ func _draw() -> void:
 	draw_rect(Rect2(-bw * 0.5, by, bw, bh), Color(0.35, 0.0, 0.0))
 	draw_rect(Rect2(-bw * 0.5, by, bw * hp / float(max_hp), bh), Color(0.15, 0.85, 0.2))
 
-	# Galon doré du vétéran au-dessus du sprite
+	# Bouclier de la posture Défendre (bas-gauche du sprite)
+	if defending:
+		var sp := Vector2(-13.0, 2.0)
+		var shield := PackedVector2Array([
+			sp + Vector2(-4.5, -5), sp + Vector2(4.5, -5), sp + Vector2(4.5, 0),
+			sp + Vector2(0, 5), sp + Vector2(-4.5, 0),
+		])
+		draw_colored_polygon(shield, Color(0.75, 0.78, 0.85))
+		var outline := shield.duplicate()
+		outline.append(shield[0])
+		draw_polyline(outline, Color(0.2, 0.25, 0.35), 1.4)
+
+	# Galons dorés du vétéran : deux chevrons pleins au-dessus de la tête,
+	# liseré sombre pour rester lisibles sur tous les terrains
 	if veteran:
 		var gold := Color(1.0, 0.82, 0.15)
-		draw_polyline(PackedVector2Array([
-			Vector2(7, -21), Vector2(11, -16.5), Vector2(15, -21),
-		]), gold, 2.0)
+		var dark := Color(0.25, 0.15, 0.0)
+		for i in 2:
+			var y := -19.0 - i * 4.5
+			var pts := PackedVector2Array([
+				Vector2(-6.5, y - 2.5), Vector2(0, y + 1.5), Vector2(6.5, y - 2.5),
+				Vector2(6.5, y), Vector2(0, y + 4.0), Vector2(-6.5, y),
+			])
+			draw_colored_polygon(pts, gold)
+			var outline := pts.duplicate()
+			outline.append(pts[0])
+			draw_polyline(outline, dark, 1.0)
 
 	if type == Type.HERO:
 		# Barre d'XP dorée sous la barre de PV

@@ -4,19 +4,36 @@ enum State { IDLE, UNIT_SELECTED, UNIT_MOVED, CASTING }
 
 const AI_TEAM := 1
 
+# Caméra libre sur les grandes cartes : flèches ou WASD/ZQSD (touches
+# physiques : indépendant de la disposition clavier), molette pour zoomer
+const CAM_SPEED := 600.0
+const ZOOM_MIN := 0.6
+const ZOOM_MAX := 2.0
+const ZOOM_STEP := 1.15
+
 @onready var map: GameMap            = $GameMap
 @onready var villages: Villages      = $Villages
 @onready var creeps: Creeps          = $Creeps
 @onready var fog: Fog                = $Fog
 @onready var camera: Camera2D        = $Camera2D
 @onready var units_layer: UnitsLayer = $UnitsLayer
+@onready var cursor = $Cursor   # pas de class_name : accès dynamique à hovered_cell
 @onready var turn_label: Label       = $UI/TurnLabel
 @onready var attack_zone_btn: Button = $UI/AttackZoneButton
+@onready var defend_btn: Button      = $UI/DefendButton
 @onready var end_turn_btn: Button    = $UI/EndTurnButton
 @onready var end_screen: ColorRect   = $UI/EndScreen
 @onready var end_label: Label        = $UI/EndScreen/EndBox/EndLabel
 @onready var spell_bar: HBoxContainer     = $UI/SpellBar
 @onready var level_up_panel: PanelContainer = $UI/LevelUpPanel
+@onready var unit_panel: PanelContainer  = $UI/UnitPanel
+@onready var portrait: TextureRect       = $UI/UnitPanel/UnitBox/TopRow/Portrait
+@onready var name_label: Label           = $UI/UnitPanel/UnitBox/TopRow/NameBox/NameLabel
+@onready var team_label: Label           = $UI/UnitPanel/UnitBox/TopRow/NameBox/TeamLabel
+@onready var hp_label: Label             = $UI/UnitPanel/UnitBox/HPLabel
+@onready var stats_label: Label          = $UI/UnitPanel/UnitBox/StatsLabel
+@onready var grade_label: Label          = $UI/UnitPanel/UnitBox/GradeLabel
+@onready var xp_label: Label             = $UI/UnitPanel/UnitBox/XPLabel
 @onready var choice_btns: Array[Button] = [
 	$UI/LevelUpPanel/LevelBox/Choice1,
 	$UI/LevelUpPanel/LevelBox/Choice2,
@@ -35,22 +52,67 @@ var creep_phase := false
 # L'armée IA tient sa position tant qu'elle n'a pas repéré le joueur ;
 # le premier contact la met à l'attaque pour toute la partie (décision 13)
 var ai_alerted := false
+# Étiquette de prévision de dégâts, suit la cible survolée (décision 14)
+var preview_label: Label = null
 
 func _ready() -> void:
-	var mid := map.get_map_size() / 2
-	camera.global_position = map.to_global(map.map_to_local(mid))
+	# La caméra démarre sur le héros du joueur (grande carte sous brouillard)
+	var hero := units_layer.get_hero(0)
+	var start_cell: Vector2i = hero.cell if hero != null else map.get_map_size() / 2
+	camera.global_position = map.to_global(map.map_to_local(start_cell))
 	for i in choice_btns.size():
 		choice_btns[i].pressed.connect(_on_spell_choice.bind(i))
 	creeps.spawn_camps(units_layer)
 	units_layer.unit_killed.connect(_on_unit_killed)
 	creeps.camp_cleared.connect(_on_camp_cleared)
+	units_layer.boss_event.connect(_on_boss_event)
+	preview_label = Label.new()
+	preview_label.z_index = 30
+	preview_label.add_theme_font_size_override("font_size", 12)
+	preview_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	preview_label.add_theme_constant_override("shadow_offset_y", 1)
+	preview_label.hide()
+	units_layer.add_child(preview_label)
 	fog.recompute()
 	_start_turn(0)
 	_update_turn_label()
 
 # ── Entrées ──────────────────────────────────────────────────────────────────
 
+func _process(delta: float) -> void:
+	var dir := Vector2.ZERO
+	if Input.is_key_pressed(KEY_LEFT) or Input.is_physical_key_pressed(KEY_A):
+		dir.x -= 1.0
+	if Input.is_key_pressed(KEY_RIGHT) or Input.is_physical_key_pressed(KEY_D):
+		dir.x += 1.0
+	if Input.is_key_pressed(KEY_UP) or Input.is_physical_key_pressed(KEY_W):
+		dir.y -= 1.0
+	if Input.is_key_pressed(KEY_DOWN) or Input.is_physical_key_pressed(KEY_S):
+		dir.y += 1.0
+	if dir != Vector2.ZERO:
+		camera.global_position += dir.normalized() * CAM_SPEED * delta / camera.zoom.x
+		_clamp_camera()
+	_update_combat_preview()
+
+func _clamp_camera() -> void:
+	var top_left := map.to_global(map.map_to_local(Vector2i.ZERO))
+	var bottom_right := map.to_global(map.map_to_local(map.get_map_size() - Vector2i.ONE))
+	camera.global_position = camera.global_position.clamp(top_left, bottom_right)
+
+func _set_zoom(z: float) -> void:
+	z = clampf(z, ZOOM_MIN, ZOOM_MAX)
+	camera.zoom = Vector2(z, z)
+	_clamp_camera()
+
 func _input(event: InputEvent) -> void:
+	# Zoom molette : toujours actif, même pendant le tour de l'IA
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_set_zoom(camera.zoom.x * ZOOM_STEP)
+			return
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_set_zoom(camera.zoom.x / ZOOM_STEP)
+			return
 	if ai_thinking or game_over or level_up_panel.visible:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -75,6 +137,12 @@ func _handle_click(cell: Vector2i) -> void:
 			var unit := units_layer.get_unit_at(cell)
 			if unit and unit.team == current_player and not unit.has_moved:
 				_select(unit)
+			elif unit != null and unit.visible:
+				# Inspection : n'importe quelle unité visible (ennemi, bandit,
+				# allié déjà joué) montre sa fiche sans être sélectionnée
+				_show_unit_panel(unit)
+			else:
+				unit_panel.hide()
 
 		State.UNIT_SELECTED:
 			if units_layer.reachable_cells.has(cell):
@@ -124,15 +192,18 @@ func _select(unit: Unit) -> void:
 	unit.selected = true
 	unit.queue_redraw()
 	state = State.UNIT_SELECTED
+	_show_unit_panel(unit)
 	units_layer.show_reachable(unit)
 	_mark_attackable(units_layer.get_enemies_in_range(unit))
 	attack_zone_btn.show()
 	attack_zone_btn.text = "Zone d'attaque"
+	defend_btn.show()
 	_update_spell_bar()
 	_update_turn_label()
 
 func _after_move() -> void:
 	attack_zone_btn.hide()
+	_show_unit_panel(selected_unit)   # rafraîchit PM restants / déf. terrain
 	_mark_attackable(units_layer.get_enemies_in_range(selected_unit))
 	# On reste sélectionné s'il y a une cible OU un sort encore lançable
 	if attackable_enemies.is_empty() \
@@ -180,7 +251,9 @@ func _deselect() -> void:
 	casting_spell = ""
 	units_layer.clear_reachable()
 	attack_zone_btn.hide()
+	defend_btn.hide()
 	spell_bar.hide()
+	unit_panel.hide()
 	_update_turn_label()
 
 func _end_turn() -> void:
@@ -247,6 +320,11 @@ func _alert_ai() -> void:
 func _on_camp_cleared(_center: Vector2i, prize: Unit) -> void:
 	_spawn_float_text(prize.cell, "Prisonnier libéré !")
 
+# Sacrifice, malédiction… — affiché seulement si le joueur voit la zone
+func _on_boss_event(cell: Vector2i, text: String) -> void:
+	if fog.is_visible_now(cell):
+		_spawn_float_text(cell, text)
+
 # Petit label doré qui monte et s'efface sur une case
 func _spawn_float_text(cell: Vector2i, text: String) -> void:
 	var lbl := Label.new()
@@ -268,10 +346,10 @@ func _spawn_float_text(cell: Vector2i, text: String) -> void:
 func _check_game_over() -> bool:
 	if game_over:
 		return true
-	# Un camp perd si son héros meurt ou s'il n'a plus d'unités
-	var player_lost: bool = units_layer.get_hero(0) == null \
+	# Un camp perd si son chef (héros ou boss) meurt ou s'il n'a plus d'unités
+	var player_lost: bool = units_layer.get_leader(0) == null \
 			or units_layer.count_team(0) == 0
-	var ai_lost: bool = units_layer.get_hero(AI_TEAM) == null \
+	var ai_lost: bool = units_layer.get_leader(AI_TEAM) == null \
 			or units_layer.count_team(AI_TEAM) == 0
 	if not player_lost and not ai_lost:
 		return false
@@ -443,11 +521,14 @@ func _ai_act_unit(unit: Unit) -> void:
 		return
 
 	# Pas encore alertée : l'unité tient sa position, elle ne fait que
-	# se défendre contre ce qui est déjà à portée (joueur ou creep réveillé)
+	# se défendre contre ce qui est déjà à portée (joueur ou creep réveillé).
+	# Sans menace, elle prend la posture Défendre : la garnison est en garde.
 	if not ai_alerted:
 		var threats := units_layer.get_enemies_in_range(unit)
 		if not threats.is_empty():
 			units_layer.do_combat(unit, AIPlayer.pick_attack_target(threats))
+		elif not unit.is_boss():
+			unit.defending = true
 		if is_instance_valid(unit):
 			unit.has_moved = true
 			unit.queue_redraw()
@@ -457,6 +538,19 @@ func _ai_act_unit(unit: Unit) -> void:
 	if unit.is_hero() and units_layer.count_team(AI_TEAM) > 1:
 		_ai_act_hero(unit)
 		return
+
+	# Boss chef d'armée : phases/sacrifice + malédiction (actions gratuites,
+	# boss.gd), puis il se bat comme un monstre de première ligne
+	if unit.is_boss():
+		var allies: Array[Unit] = []
+		for child in units_layer.get_children():
+			if child is Unit and not child.is_queued_for_deletion() \
+					and (child as Unit).team == unit.team and child != unit:
+				allies.append(child as Unit)
+		Boss.phase_check(unit, allies, units_layer)
+		Boss.act_doom(unit, units_layer, map)
+		if _check_game_over() or not is_instance_valid(unit):
+			return
 
 	var target := AIPlayer.find_nearest_enemy(unit, units_layer)
 	if target == null:
@@ -473,7 +567,8 @@ func _ai_act_unit(unit: Unit) -> void:
 			unit.queue_redraw()
 		return
 
-	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map, unit.type)
+	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp,
+			map, unit.type, units_layer.move_context(unit))
 
 	# Village capturable à portée de déplacement : priorité territoriale
 	if unit.can_capture():
@@ -513,7 +608,8 @@ func _ai_act_unit(unit: Unit) -> void:
 # riposte, +2 XP). 3. Sinon il escorte son armée hors du contact ennemi.
 func _ai_act_hero(unit: Unit) -> void:
 	if unit.hp < unit.max_hp * 0.4:
-		var flee := Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map, unit.type)
+		var flee := Pathfinder.get_reachable(unit.cell, unit.remaining_mp,
+				map, unit.type, units_layer.move_context(unit))
 		var safe := AIPlayer.best_retreat(unit, flee, units_layer)
 		if safe != unit.cell:
 			units_layer.move_unit(unit, safe, flee.get(safe, 0))
@@ -546,7 +642,8 @@ func _ai_act_hero(unit: Unit) -> void:
 			unit.queue_redraw()
 		return
 
-	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map, unit.type)
+	var reachable := Pathfinder.get_reachable(unit.cell, unit.remaining_mp,
+			map, unit.type, units_layer.move_context(unit))
 	var dest := AIPlayer.best_hero_position(unit, reachable, units_layer)
 	if dest != unit.cell:
 		units_layer.move_unit(unit, dest, reachable.get(dest, 0))
@@ -563,10 +660,99 @@ func _ai_act_hero(unit: Unit) -> void:
 
 # ── UI ───────────────────────────────────────────────────────────────────────
 
+# Fiche d'unité : portrait teinté équipe, nom, PV, stats, grade, XP.
+# Affichée à la sélection et au clic d'inspection sur toute unité visible.
+func _show_unit_panel(u: Unit) -> void:
+	if u == null or not is_instance_valid(u):
+		unit_panel.hide()
+		return
+	portrait.texture = Unit.TEXTURES[u.type][0]
+	portrait.modulate = Unit.TEAM_COLORS[u.team]
+	name_label.text = u.unit_name()
+
+	if u.team == Unit.NEUTRAL_TEAM:
+		team_label.text = "Créature neutre"
+	elif u.team == 0:
+		team_label.text = "Joueur 1 (Bleu)"
+	else:
+		team_label.text = "Ennemi (Rouge)"
+	team_label.modulate = Unit.TEAM_COLORS[u.team]
+
+	hp_label.text = "PV : %d / %d" % [u.hp, u.max_hp]
+	var defense := units_layer.defense_of(u)
+	stats_label.text = "Attaque : %d    Riposte : %d\nPortée : %d    Dépl. : %d/%d\nVision : %d    Défense : +%d%s" % [
+		u.atk(), u.counter_atk(), u.attack_range(),
+		u.remaining_mp, u.movement_points(), u.vision(), defense,
+		"  (en garde)" if u.defending else "",
+	]
+
+	# Grade : vétérance pour la troupe, phases pour un boss, rien pour le héros
+	if u.is_hero():
+		grade_label.hide()
+	elif u.is_boss():
+		grade_label.text = "Boss — phase %d" % (u.boss_phase + 1)
+		grade_label.show()
+	elif u.veteran:
+		grade_label.text = "Grade : Vétéran »»"
+		grade_label.show()
+	else:
+		grade_label.text = "Grade : recrue (%d/%d kills)" % [u.kills, Unit.VETERAN_KILLS]
+		grade_label.show()
+
+	# XP : héros uniquement
+	if u.is_hero():
+		if u.level >= Unit.MAX_LEVEL:
+			xp_label.text = "Niveau %d (max) — XP %d" % [u.level, u.xp]
+		else:
+			xp_label.text = "Niveau %d — XP %d / %d" % [u.level, u.xp, Unit.XP_THRESHOLDS[u.level - 1]]
+		xp_label.show()
+	else:
+		xp_label.hide()
+
+	unit_panel.show()
+
 func _on_attack_zone_pressed() -> void:
 	units_layer.toggle_attack_zone()
 	var showing := units_layer._show_attack_zone
 	attack_zone_btn.text = "Masquer zone" if showing else "Zone d'attaque"
+
+# Posture Défendre : remplace l'action du tour, +DEFEND_BONUS de défense
+# jusqu'à la prochaine action de l'unité (décision 14)
+func _on_defend_pressed() -> void:
+	if selected_unit == null or ai_thinking or game_over:
+		return
+	var u := selected_unit
+	u.defending = true
+	u.has_moved = true
+	u.remaining_mp = 0
+	print("%s se met en garde (+%d déf)" % [u.unit_name(), Unit.DEFEND_BONUS])
+	_deselect()
+
+# Prévision de dégâts (décision 14) : au survol d'une cible attaquable,
+# affiche l'issue exacte du combat — il est déterministe, autant le dire
+func _update_combat_preview() -> void:
+	if preview_label == null:
+		return
+	if selected_unit == null or not is_instance_valid(selected_unit) \
+			or state not in [State.UNIT_SELECTED, State.UNIT_MOVED]:
+		preview_label.hide()
+		return
+	var target := units_layer.get_unit_at(cursor.hovered_cell)
+	if target == null or target not in attackable_enemies:
+		preview_label.hide()
+		return
+	var p := units_layer.preview_combat(selected_unit, target)
+	var lines: Array[String] = []
+	lines.append("Attaque : -%d%s" % [p["damage"], "  (élimine !)" if p["kill"] else ""])
+	if not p["kill"]:
+		if p["counter"] == 0:
+			lines.append("Pas de riposte")
+		else:
+			lines.append("Riposte : -%d%s" % [p["counter"], "  (FATALE !)" if p["death"] else ""])
+	preview_label.text = "\n".join(lines)
+	preview_label.modulate = Color(1.0, 0.45, 0.45) if p["death"] else Color(1, 1, 1)
+	preview_label.position = units_layer.map_to_screen(target.cell) + Vector2(22, -34)
+	preview_label.show()
 
 func _update_turn_label() -> void:
 	if creep_phase:

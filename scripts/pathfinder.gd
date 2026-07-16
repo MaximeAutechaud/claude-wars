@@ -4,9 +4,18 @@ class_name Pathfinder
 # atteignables depuis `start` avec `mp` points de mouvement.
 # Les coûts de terrain dépendent du type d'unité (Unit.STATS).
 # Dijkstra simplifié — cartes petites, pas besoin de priority queue.
+#
+# `ctx` (optionnel, construit par UnitsLayer.move_context) applique la
+# zone de contrôle façon Wesnoth (décision 14) :
+# - "blocked" : cases occupées par un ennemi — infranchissables ;
+# - "zoc"     : cases voisines d'un ennemi — on peut y entrer, mais le
+#   mouvement s'y arrête (la case n'est pas étendue, sauf la case de départ :
+#   on peut toujours SORTIR d'une zone de contrôle).
 static func get_reachable(start: Vector2i, mp: int, map: GameMap,
-		unit_type: Unit.Type = Unit.Type.INFANTRY) -> Dictionary:
+		unit_type: Unit.Type = Unit.Type.INFANTRY, ctx: Dictionary = {}) -> Dictionary:
 	var costs: Dictionary = Unit.STATS[unit_type]["costs"]
+	var zoc: Dictionary = ctx.get("zoc", {})
+	var blocked: Dictionary = ctx.get("blocked", {})
 	var dist := { start: 0 }
 	var open: Array[Vector2i] = [start]
 
@@ -19,10 +28,14 @@ static func get_reachable(start: Vector2i, mp: int, map: GameMap,
 		var cell: Vector2i = open[best_idx]
 		open.remove_at(best_idx)
 
+		# Entrer en zone de contrôle ennemie stoppe le mouvement
+		if cell != start and zoc.has(cell):
+			continue
+
 		var cur_cost: int = dist[cell]
 
 		for nb in get_neighbors(cell):
-			if not map.is_in_bounds(nb):
+			if not map.is_in_bounds(nb) or blocked.has(nb):
 				continue
 			var move_cost: int = costs.get(map.get_terrain(nb), 99)
 			if move_cost >= 99:

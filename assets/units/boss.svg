@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+  <ellipse cx="16" cy="29" rx="12" ry="2.5" fill="#000000" opacity="0.3"/>
+  <!-- manche de faux -->
+  <rect x="24" y="2.5" width="2.2" height="25.5" rx="1" fill="#8a8a8a" stroke="#333333" stroke-width="0.9"/>
+  <!-- lame de faux -->
+  <path d="M25.5 4 Q15 1 8.5 7.5 Q16 4.5 25.5 8 z" fill="#dedede" stroke="#333333" stroke-width="1"/>
+  <!-- robe -->
+  <path d="M8.5 28 Q7.5 14 15.5 9.5 Q23.5 14 22.5 28 z" fill="#b9b9b9" stroke="#333333" stroke-width="1.2"/>
+  <!-- ceinture de cordes -->
+  <rect x="10.5" y="19" width="10" height="1.8" fill="#7c7c7c"/>
+  <!-- capuche -->
+  <path d="M10 12 Q9.5 3.5 15.5 3.5 Q21.5 3.5 21 12 Q15.5 9 10 12 z" fill="#9d9d9d" stroke="#333333" stroke-width="1.2"/>
+  <!-- visage d'ombre + yeux -->
+  <ellipse cx="15.5" cy="9" rx="3.6" ry="2.8" fill="#2b2b2b"/>
+  <circle cx="14.1" cy="8.8" r="0.9" fill="#f4f4f4"/>
+  <circle cx="16.9" cy="8.8" r="0.9" fill="#f4f4f4"/>
+</svg>

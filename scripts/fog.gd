@@ -59,8 +59,9 @@ func recompute() -> void:
 func _draw() -> void:
 	var hw := GameMap.TILE_W * 0.5 + 0.5
 	var hh := GameMap.TILE_H * 0.5 + 0.5
-	for col in GameMap.MAP_W:
-		for row in GameMap.MAP_H:
+	var size := map.get_map_size()
+	for col in size.x:
+		for row in size.y:
 			var cell := Vector2i(col, row)
 			if visible_now.has(cell):
 				continue

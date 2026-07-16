@@ -4,15 +4,6 @@ extends Node2D
 # Soin d'une unité qui commence son tour sur un village allié
 const VILLAGE_HEAL := 3
 
-# cell -> propriétaire initial (-1 = neutre)
-const START_OWNERS: Dictionary = {
-	Vector2i(1, 2):  0,    # village de départ bleu
-	Vector2i(10, 7): 1,    # village de départ rouge
-	Vector2i(6, 4):  -1,
-	Vector2i(4, 7):  -1,
-	Vector2i(8, 1):  -1,
-}
-
 @onready var map: GameMap = $"../GameMap"
 @onready var fog: Fog = get_node_or_null("../Fog")
 
@@ -20,7 +11,8 @@ var owners: Dictionary = {}
 var _tex: Texture2D = preload("res://assets/tiles/village.svg")
 
 func _ready() -> void:
-	owners = START_OWNERS.duplicate()
+	# cell -> propriétaire initial (-1 = neutre), depuis le scénario courant
+	owners = (Scenario.CURRENT["villages"] as Dictionary).duplicate()
 	queue_redraw()
 
 func is_village(cell: Vector2i) -> bool:

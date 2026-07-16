@@ -15,46 +15,38 @@ const ACT_DELAY := 0.4    # pause visuelle entre deux actions de creep
 
 signal camp_cleared(center: Vector2i, prize: Unit)
 
-# Contenu des camps : deux petits camps sur les flancs, un gros au centre
-# (avec un chef) qui garde le village central. "prize" = le prisonnier.
-const CAMPS: Array = [
-	{ "center": Vector2i(11, 1), "prize": Unit.Type.INFANTRY, "units": [
-		{ "cell": Vector2i(11, 1), "type": Unit.Type.INFANTRY },
-		{ "cell": Vector2i(11, 2), "type": Unit.Type.ARCHER },
-	] },
-	{ "center": Vector2i(1, 8), "prize": Unit.Type.ARCHER, "units": [
-		{ "cell": Vector2i(1, 8), "type": Unit.Type.INFANTRY },
-		{ "cell": Vector2i(2, 9), "type": Unit.Type.ARCHER },
-	] },
-	{ "center": Vector2i(5, 4), "prize": Unit.Type.TANK, "units": [
-		{ "cell": Vector2i(5, 4), "type": Unit.Type.TANK, "chief": true },
-		{ "cell": Vector2i(5, 5), "type": Unit.Type.INFANTRY },
-		{ "cell": Vector2i(6, 5), "type": Unit.Type.ARCHER },
-	] },
-]
-
 @onready var map: GameMap = $"../GameMap"
 @onready var fog: Fog = get_node_or_null("../Fog")
 
-# camp : { center, prize, owner, awake, hp_seen, units: Array[Unit] }
+# camp : { center, prize, prize_veteran, owner, awake, hp_seen, units }
 # owner = -1 tant que le camp tient, puis l'équipe qui l'a vaincu (repos).
 # hp_seen = total de PV constaté au dernier tour neutre — toute baisse
 # signifie que le camp a été attaqué (même à distance) et doit se réveiller.
 var camps: Array = []
 
-# Appelé par main._ready (l'ordre des _ready des nœuds frères n'est pas fiable)
+# Appelé par main._ready (l'ordre des _ready des nœuds frères n'est pas fiable).
+# Les camps sont décrits par le scénario courant (décision 13, phase 9).
+# Un camp peut abriter un boss ("boss": true) : mécaniques dans boss.gd.
 func spawn_camps(units_layer: UnitsLayer) -> void:
-	for def: Dictionary in CAMPS:
-		var camp := { "center": def["center"], "prize": def["prize"],
+	for def: Dictionary in Scenario.CURRENT["camps"]:
+		var camp := { "center": def["center"],
+				"prize": Unit.TYPE_BY_ID[def["prize"]],
+				"prize_veteran": def.get("prize_veteran", false),
 				"owner": -1, "awake": false, "hp_seen": 0, "units": [] }
 		for udef: Dictionary in def["units"]:
-			var u := units_layer.spawn(udef["cell"], Unit.NEUTRAL_TEAM, udef["type"])
+			var type: Unit.Type = Unit.TYPE_BY_ID[udef["type"]]
+			var u := units_layer.spawn(udef["cell"], Unit.NEUTRAL_TEAM, type)
 			u.home_cell = udef["cell"]
-			if udef.get("chief", false):
+			if udef.has("name"):
+				u.display_name = udef["name"]
+			elif udef.get("chief", false):
 				u.display_name = "Chef bandit"
-				u.scale = Vector2(1.18, 1.18)
 			else:
-				u.display_name = "Bandit — " + Unit.STATS[udef["type"]]["name"]
+				u.display_name = "Bandit — " + Unit.STATS[type]["name"]
+			if type == Unit.Type.BOSS:
+				u.scale = Vector2(1.35, 1.35)
+			elif udef.get("chief", false):
+				u.scale = Vector2(1.18, 1.18)
 			camp["hp_seen"] += u.max_hp
 			camp["units"].append(u)
 		camps.append(camp)
@@ -82,6 +74,9 @@ func on_unit_killed(victim: Unit, killer: Unit, units_layer: UnitsLayer) -> void
 		camp["awake"] = false
 		var cell := _prize_cell(camp, units_layer)
 		var prize := units_layer.spawn(cell, killer.team, camp["prize"])
+		if camp["prize_veteran"]:
+			for i in Unit.VETERAN_KILLS:
+				prize.add_kill()
 		prize.has_moved = true
 		prize.queue_redraw()
 		print("Camp vaincu ! Le prisonnier (%s) rejoint l'équipe %d"
@@ -131,7 +126,11 @@ func run_turn(units_layer: UnitsLayer, should_stop: Callable) -> void:
 		for u: Unit in members:
 			if not is_instance_valid(u):
 				continue
-			var acted := _act_creep(u, camp, units_layer)
+			var acted: bool
+			if u.is_boss():
+				acted = _act_boss(u, camp, units_layer)
+			else:
+				acted = _act_creep(u, camp, units_layer)
 			if should_stop.call():
 				return
 			if acted:
@@ -158,7 +157,8 @@ func _act_creep(u: Unit, camp: Dictionary, units_layer: UnitsLayer) -> bool:
 		return true
 
 	# Cases atteignables qui restent dans le leash du camp
-	var reachable := Pathfinder.get_reachable(u.cell, u.remaining_mp, map, u.type)
+	var reachable := Pathfinder.get_reachable(u.cell, u.remaining_mp,
+			map, u.type, units_layer.move_context(u))
 	var leashed: Dictionary = {}
 	for cell: Vector2i in reachable:
 		if Pathfinder.distance(cell, camp["center"]) <= LEASH_RADIUS \
@@ -194,6 +194,19 @@ func _act_creep(u: Unit, camp: Dictionary, units_layer: UnitsLayer) -> bool:
 			u.queue_redraw()
 	return acted
 
+# Tour d'un boss de camp : phases/sacrifice et malédiction (boss.gd), puis
+# le comportement de creep normal (déplacement leashé + attaque).
+func _act_boss(boss: Unit, camp: Dictionary, units_layer: UnitsLayer) -> bool:
+	var allies: Array[Unit] = []
+	for u: Unit in alive_units(camp):
+		if u != boss:
+			allies.append(u)
+	Boss.phase_check(boss, allies, units_layer)
+	Boss.act_doom(boss, units_layer, map)
+	if is_instance_valid(boss):
+		_act_creep(boss, camp, units_layer)
+	return true   # un boss mérite toujours sa pause dramatique
+
 # Le camp se rendort quand tous ses creeps sont rentrés et que personne ne rôde
 func _maybe_sleep(camp: Dictionary, units_layer: UnitsLayer) -> void:
 	for u: Unit in alive_units(camp):
@@ -201,6 +214,9 @@ func _maybe_sleep(camp: Dictionary, units_layer: UnitsLayer) -> void:
 				or _nearest_enemy(u.cell, units_layer, WAKE_RADIUS) != null:
 			return
 	camp["awake"] = false
+	for u: Unit in alive_units(camp):
+		if u.is_boss():
+			Boss.clear_doom(u, units_layer)
 	print("Un camp de creeps se rendort.")
 	queue_redraw()
 
