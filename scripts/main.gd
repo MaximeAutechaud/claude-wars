@@ -56,13 +56,20 @@ var ai_alerted := false
 var preview_label: Label = null
 
 func _ready() -> void:
+	for i in choice_btns.size():
+		choice_btns[i].pressed.connect(_on_spell_choice.bind(i))
+	# Partie chargée : l'écran d'accueil a déposé la sauvegarde dans
+	# SaveGame.pending — elle remplace le spawn du scénario (décision 15)
+	var loaded := not SaveGame.pending.is_empty()
+	if loaded:
+		SaveGame.apply(self, SaveGame.pending)
+		SaveGame.pending = {}
+	else:
+		creeps.spawn_camps(units_layer)
 	# La caméra démarre sur le héros du joueur (grande carte sous brouillard)
 	var hero := units_layer.get_hero(0)
 	var start_cell: Vector2i = hero.cell if hero != null else map.get_map_size() / 2
 	camera.global_position = map.to_global(map.map_to_local(start_cell))
-	for i in choice_btns.size():
-		choice_btns[i].pressed.connect(_on_spell_choice.bind(i))
-	creeps.spawn_camps(units_layer)
 	units_layer.unit_killed.connect(_on_unit_killed)
 	creeps.camp_cleared.connect(_on_camp_cleared)
 	units_layer.boss_event.connect(_on_boss_event)
@@ -74,7 +81,10 @@ func _ready() -> void:
 	preview_label.hide()
 	units_layer.add_child(preview_label)
 	fog.recompute()
-	_start_turn(0)
+	# Une sauvegarde est prise en cours de tour joueur : le soin de début
+	# de tour a déjà eu lieu, ne pas le rejouer au chargement
+	if not loaded:
+		_start_turn(0)
 	_update_turn_label()
 
 # ── Entrées ──────────────────────────────────────────────────────────────────
@@ -367,6 +377,23 @@ func _check_game_over() -> bool:
 
 func _on_restart_pressed() -> void:
 	get_tree().reload_current_scene()
+
+# ── Sauvegarde / menu (décision 15) ──────────────────────────────────────────
+
+# Sauvegarde manuelle, pendant le tour du joueur uniquement (l'état d'un
+# tour IA ou neutre en cours n'est pas capturable proprement)
+func _on_save_pressed() -> void:
+	if ai_thinking or game_over or creep_phase or current_player != 0:
+		return
+	_deselect()
+	SaveGame.write(SaveGame.capture(self))
+	print("Partie sauvegardée (%s)" % ProjectSettings.globalize_path(SaveGame.SAVE_PATH))
+	var hero := units_layer.get_hero(0)
+	if hero != null:
+		_spawn_float_text(hero.cell, "Partie sauvegardée")
+
+func _on_menu_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/title.tscn")
 
 # ── Sorts ────────────────────────────────────────────────────────────────────
 

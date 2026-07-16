@@ -172,6 +172,25 @@ Enseignements :
 	  d'information). Si l'arrêt net s'avère trop rigide au playtest,
 	  l'alternative douce est le surcoût de PM à la Civilization.
 
+15. **Sauvegarde et écran d'accueil** (16/07/2026, première brique de la
+	phase 11 — la campagne exigera de poser le jeu et de le reprendre).
+	- **Une sauvegarde manuelle unique** (`user://save.json`, JSON pur —
+	  mêmes contraintes que le format de scénario : données portables, zéro
+	  référence de classe). Bouton « Sauvegarder » en jeu, actif pendant le
+	  tour du joueur uniquement (l'état d'un tour IA/neutre en cours n'est
+	  pas capturable proprement). Elle capture tout : unités des deux camps
+	  (PV, PM, XP, sorts, cooldowns, vétérance, posture, état de boss),
+	  camps de bandits (réveil, propriétaire, membres vivants), villages,
+	  brouillard exploré, compteur de tours, alerte IA.
+	- **Écran d'accueil** (`scenes/title.tscn`, scène principale du projet) :
+	  Continuer (grisé sans sauvegarde, affiche le tour), Nouvelle partie,
+	  Quitter. Boutons « Menu principal » en jeu et sur l'écran de fin.
+	- Chargement par relais : l'accueil dépose la sauvegarde lue dans
+	  `SaveGame.pending`, main._ready l'applique à la place du spawn du
+	  scénario (`SaveGame.apply` purge puis restaure).
+	- Pas d'autosave ni d'emplacements multiples pour l'instant — à revoir
+	  avec la campagne (phase 11) si le besoin apparaît au playtest.
+
 ## Feuille de route
 
 Chaque phase doit laisser un jeu jouable.
@@ -256,6 +275,11 @@ Chaque phase doit laisser un jeu jouable.
 	  contrôle façon Wesnoth (`Pathfinder.get_reachable` + ctx de
 	  `UnitsLayer.move_context` : arrêt en case voisine d'un ennemi visible,
 	  cases ennemies infranchissables, PM coupés à l'entrée — Bond compris)
+- [x] **Phase 11a** — sauvegarde/chargement + écran d'accueil (décision 15) :
+	  `scripts/save_game.gd` (capture/apply JSON de l'état complet),
+	  `scenes/title.tscn` (Continuer / Nouvelle partie / Quitter, nouvelle
+	  scène principale), boutons Sauvegarder et Menu principal en jeu,
+	  test headless `tests/test_save.tscn` (aller-retour disque complet)
 - [ ] **Phase 11+** — campagne : enchaînement des tableaux, persistance
 	  héros/vétérans (recall à la Wesnoth), boss fights en climax de scénario.
 	  Récompense de survie (14/07/2026) : une unité qui termine un tableau
@@ -310,6 +334,10 @@ Vigilance connue : l'IA alertée navigue à la distance hexagonale, pas au
 chemin — face au fleuve, ses unités peuvent longer la rive au lieu de
 rejoindre un pont (peu visible tant que le climax se joue près de sa base,
 à traiter si un tableau l'exige).
-Prochaine brique : playtest grandeur nature du tableau « La Marche du Bord »
-(équilibrage des camps, du boss et de l'assaut final), puis la campagne
-(phase 11 : enchaînement de tableaux, persistance des vétérans).
+Sauvegarde/chargement (décision 15) : `SaveGame` (statique) capture l'état
+complet en JSON (`user://save.json`), l'écran d'accueil (`title.tscn`, scène
+principale) le recharge via `SaveGame.pending` appliqué par main._ready.
+Prochaine brique : la campagne (phase 11 : enchaînement de tableaux,
+persistance des héros/vétérans entre tableaux) ; équilibrage en attente —
+réduire les prisonniers des camps (chaque perte doit faire mal, distiller
+les unités anonymes).
