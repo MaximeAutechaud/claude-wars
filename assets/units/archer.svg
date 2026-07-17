@@ -1,16 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-  <ellipse cx="15" cy="29" rx="10" ry="2.5" fill="#000000" opacity="0.25"/>
-  <!-- jambes -->
-  <rect x="9" y="21.5" width="3.5" height="7" rx="1.5" fill="#c9c9c9" stroke="#333333" stroke-width="1"/>
-  <rect x="13.5" y="21.5" width="3.5" height="7" rx="1.5" fill="#c9c9c9" stroke="#333333" stroke-width="1"/>
-  <!-- torse -->
-  <rect x="7" y="13" width="12" height="10" rx="3" fill="#ececec" stroke="#333333" stroke-width="1.2"/>
-  <!-- tête -->
-  <circle cx="13" cy="8.5" r="5" fill="#e0e0e0" stroke="#333333" stroke-width="1.2"/>
-  <!-- arc -->
-  <path d="M23 4 Q31 16 23 28" fill="none" stroke="#5c5c5c" stroke-width="2"/>
-  <line x1="23" y1="4" x2="23" y2="28" stroke="#bdbdbd" stroke-width="1"/>
-  <!-- flèche -->
-  <line x1="13" y1="16" x2="26" y2="16" stroke="#8f8f8f" stroke-width="1.5"/>
-  <path d="M29 16 l-4 -2 v4 z" fill="#4a4a4a"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+  <ellipse cx="19" cy="33.5" rx="12" ry="2.8" fill="#000000" opacity="0.25"/>
+  <!-- cape verte (derrière) -->
+  <path d="M13 15 Q3.5 19 4.5 31.5 Q10 30 13.5 26 z" fill="#4d7040" stroke="#333333" stroke-width="1"/>
+  <path d="M12.2 17 Q7 20.5 7 29" fill="none" stroke="#3c5832" stroke-width="1"/>
+  <!-- carquois dans le dos, flèches empennées -->
+  <g transform="rotate(-24 7.5 13)">
+    <line x1="6" y1="6" x2="6" y2="9.5" stroke="#9a6b3f" stroke-width="1.1"/>
+    <line x1="8" y1="5.2" x2="8" y2="9.5" stroke="#9a6b3f" stroke-width="1.1"/>
+    <line x1="9.8" y1="6.2" x2="9.8" y2="9.5" stroke="#9a6b3f" stroke-width="1.1"/>
+    <path d="M6 4 l-1.4 2.4 h2.8 z" fill="#d8d3c0"/>
+    <path d="M8 3.2 l-1.4 2.4 h2.8 z" fill="#d8d3c0"/>
+    <path d="M9.8 4.2 l-1.4 2.4 h2.8 z" fill="#d8d3c0"/>
+    <rect x="4.2" y="8.6" width="6.2" height="10" rx="2.1" fill="#8a5a33" stroke="#333333" stroke-width="1"/>
+    <line x1="4.3" y1="11" x2="10.3" y2="11" stroke="#66422a" stroke-width="1"/>
+  </g>
+  <!-- jambes + bottes -->
+  <rect x="12" y="27.5" width="3.8" height="3.6" rx="1.2" fill="#6e5741" stroke="#333333" stroke-width="1"/>
+  <rect x="17.6" y="27.5" width="3.8" height="3.6" rx="1.2" fill="#6e5741" stroke="#333333" stroke-width="1"/>
+  <rect x="11.4" y="30.4" width="4.8" height="2.9" rx="1.1" fill="#59422c" stroke="#333333" stroke-width="1"/>
+  <rect x="17.2" y="30.4" width="4.8" height="2.9" rx="1.1" fill="#59422c" stroke="#333333" stroke-width="1"/>
+  <!-- tunique de faction, baudrier et ceinture de cuir -->
+  <rect x="10" y="17.5" width="13.5" height="10.8" rx="3" fill="#e800e8" stroke="#333333" stroke-width="1.2"/>
+  <path d="M20 18 q3 0.7 3 4.4 v0.8 q0 3.6 -3 4.4 z" fill="#a800a8"/>
+  <path d="M11 18.6 L22.6 25.4" stroke="#52341f" stroke-width="2"/>
+  <rect x="10.2" y="23.8" width="13.1" height="2" fill="#66422a"/>
+  <rect x="15.9" y="23.5" width="2.1" height="2.6" rx="0.5" fill="#c9a24b" stroke="#333333" stroke-width="0.7"/>
+  <!-- bras qui bande l'arc, gant de cuir -->
+  <path d="M16 19.4 L27.6 19.6 L27.5 21.8 L15.9 21.6 z" fill="#4d7040" stroke="#333333" stroke-width="0.9"/>
+  <circle cx="28.3" cy="20.7" r="1.9" fill="#6b4a2c" stroke="#333333" stroke-width="0.9"/>
+  <!-- capuche à pointe légère, visage dans l'ombre -->
+  <path d="M9 11 Q9.2 7.4 10.9 5.9 Q11.2 4.4 8.8 3.2 Q12 1.4 14.6 1.9 Q16.8 2.4 18 3.8 Q22.6 5.2 22.6 11 Q22.6 16.9 15.8 17 Q9 16.9 9 11 z" fill="#567d3e" stroke="#333333" stroke-width="1.2"/>
+  <circle cx="17.6" cy="11.2" r="4.1" fill="#241f1a" stroke="#333333" stroke-width="0.9"/>
+  <!-- arc en bois recourbé + flèche -->
+  <path d="M27.5 4.5 Q38.5 20 27.5 35.5" fill="none" stroke="#74512e" stroke-width="2.4"/>
+  <path d="M27.5 4.5 q2.4 -0.6 3 -2.4" fill="none" stroke="#74512e" stroke-width="2"/>
+  <path d="M27.5 35.5 q2.4 0.6 3 2.4" fill="none" stroke="#74512e" stroke-width="2"/>
+  <line x1="27.7" y1="4.1" x2="27.7" y2="35.9" stroke="#e8e4d8" stroke-width="1"/>
+  <line x1="17" y1="20.5" x2="33" y2="20.5" stroke="#9a6b3f" stroke-width="1.6"/>
+  <path d="M36.4 20.5 l-4.6 -2.3 v4.6 z" fill="#6b7280"/>
 </svg>

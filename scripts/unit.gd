@@ -20,7 +20,7 @@ const NEUTRAL_TEAM := 2
 # "vision" : rayon de vision sous brouillard de guerre.
 const STATS: Dictionary = {
 	Type.INFANTRY: {
-		"name": "Infanterie", "max_hp": 10, "mp": 3, "atk": 3, "counter": 2, "range": 1,
+		"name": "Guerrier", "max_hp": 10, "mp": 3, "atk": 3, "counter": 2, "range": 1,
 		"vision": 3,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
@@ -29,7 +29,7 @@ const STATS: Dictionary = {
 		},
 	},
 	Type.TANK: {
-		"name": "Char", "max_hp": 14, "mp": 5, "atk": 5, "counter": 3, "range": 1,
+		"name": "Cavalier", "max_hp": 14, "mp": 5, "atk": 5, "counter": 3, "range": 1,
 		"vision": 2,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
@@ -111,6 +111,8 @@ const TEXTURES: Dictionary = {
 }
 
 const IDLE_FRAME_TIME := 0.5
+
+const TEAM_SHADER := preload("res://assets/team_color.gdshader")
 
 @export var type: Type = Type.INFANTRY
 @export var team: int = 0
@@ -263,6 +265,9 @@ var _idle_frame := 0
 
 func _ready() -> void:
 	sprite.texture = TEXTURES[type][0]
+	var mat := ShaderMaterial.new()
+	mat.shader = TEAM_SHADER
+	sprite.material = mat
 	var timer := Timer.new()
 	timer.wait_time = IDLE_FRAME_TIME
 	timer.autostart = true
@@ -274,11 +279,13 @@ func _advance_idle_frame() -> void:
 	sprite.texture = TEXTURES[type][_idle_frame]
 
 func _draw() -> void:
-	# Teinte d'équipe sur le sprite (dessiné en niveaux de gris)
-	var tint: Color = TEAM_COLORS[team]
-	if has_moved:
-		tint = tint.darkened(0.45)
-	sprite.self_modulate = tint
+	# Couleur d'équipe : le shader remplace les zones magenta du sprite
+	# (bouclier, capuche, pennon…) par la couleur de la faction
+	var mat := sprite.material as ShaderMaterial
+	if mat:
+		mat.set_shader_parameter("team_color", TEAM_COLORS[team])
+	# Unité qui a déjà agi : sprite entier assombri
+	sprite.self_modulate = Color(0.55, 0.55, 0.55) if has_moved else Color.WHITE
 
 	# Contours d'hexagone sur la case : blanc = sélectionnée, rouge = attaquable
 	var hw := GameMap.TILE_W * 0.5 - 3.0

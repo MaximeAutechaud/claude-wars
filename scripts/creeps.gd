@@ -18,6 +18,14 @@ signal camp_cleared(center: Vector2i, prize: Unit)
 @onready var map: GameMap = $"../GameMap"
 @onready var fog: Fog = get_node_or_null("../Fog")
 
+# Les mini-sprites des prisonniers en cage passent par le shader d'équipe
+# (accents neutres or) ; les fanions et barreaux, unis, ne sont pas affectés.
+func _ready() -> void:
+	var mat := ShaderMaterial.new()
+	mat.shader = Unit.TEAM_SHADER
+	mat.set_shader_parameter("team_color", Unit.TEAM_COLORS[Unit.NEUTRAL_TEAM])
+	material = mat
+
 # camp : { center, prize, prize_veteran, owner, awake, hp_seen, units }
 # owner = -1 tant que le camp tient, puis l'équipe qui l'a vaincu (repos).
 # hp_seen = total de PV constaté au dernier tour neutre — toute baisse

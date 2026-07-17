@@ -687,14 +687,19 @@ func _ai_act_hero(unit: Unit) -> void:
 
 # ── UI ───────────────────────────────────────────────────────────────────────
 
-# Fiche d'unité : portrait teinté équipe, nom, PV, stats, grade, XP.
+# Fiche d'unité : portrait aux couleurs de l'équipe, nom, PV, stats, grade, XP.
 # Affichée à la sélection et au clic d'inspection sur toute unité visible.
 func _show_unit_panel(u: Unit) -> void:
 	if u == null or not is_instance_valid(u):
 		unit_panel.hide()
 		return
 	portrait.texture = Unit.TEXTURES[u.type][0]
-	portrait.modulate = Unit.TEAM_COLORS[u.team]
+	if portrait.material == null:
+		var mat := ShaderMaterial.new()
+		mat.shader = Unit.TEAM_SHADER
+		portrait.material = mat
+	(portrait.material as ShaderMaterial).set_shader_parameter(
+			"team_color", Unit.TEAM_COLORS[u.team])
 	name_label.text = u.unit_name()
 
 	if u.team == Unit.NEUTRAL_TEAM:

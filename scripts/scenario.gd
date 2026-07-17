@@ -98,7 +98,7 @@ const CURRENT: Dictionary = {
 			{ "cell": Vector2i(5, 12), "type": "archer" },
 		] },
 		# 4 — camp du gué, le plus dur : garde le village central au bord du
-		# fleuve, et sa récompense premium — un Char vétéran
+		# fleuve, et sa récompense premium — un Cavalier vétéran
 		{ "center": Vector2i(12, 8), "prize": "tank", "prize_veteran": true, "units": [
 			{ "cell": Vector2i(12, 8), "type": "tank", "chief": true },
 			{ "cell": Vector2i(12, 9), "type": "infantry" },
