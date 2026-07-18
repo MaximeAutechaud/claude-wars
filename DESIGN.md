@@ -71,7 +71,9 @@ Enseignements :
    contenu tactique même avec une IA adverse simple.
 7. **Vétérance des unités** — après 2-3 kills : +1 atk, +2 PV max, galon sur le
    sprite. Le frisson Fire Emblem (« pas mon archer vétéran ! ») sans système de
-   classes complet ; la permadeath existe déjà de fait.
+   classes complet ; la permadeath existe déjà de fait. *(Amendé le 18/07/2026
+   par la décision 16 : la promotion passe à l'XP partagée et débloque une
+   compétence de classe en plus des stats.)*
 8. **Combat déterministe conservé** — pas de jets de dés à la Wesnoth/FE :
    lisibilité, sentiment de justice, IA beaucoup plus simple.
 9. **Plus tard : scénarios / campagne** — objectifs variés (survivre N tours,
@@ -191,6 +193,74 @@ Enseignements :
 	- Pas d'autosave ni d'emplacements multiples pour l'instant — à revoir
 	  avec la campagne (phase 11) si le besoin apparaît au playtest.
 
+16. **Roster d'unités : un verbe par classe, vétérance à compétences**
+	(18/07/2026). Sans économie, le raisonnement Advance Wars « je produis le
+	contre » n'existe pas : une unité ne se définit pas contre une autre mais
+	par ce qu'elle permet de faire que les autres ne font pas — un **verbe
+	unique**, de préférence géométrique (le combat déterministe + ZoC +
+	Défendre récompense les identités de position, pas les lignes de stats).
+	Les prisonniers des camps sont l'arbre de tech : un type rare est une
+	récompense de scénario et un jalon de progression de campagne.
+	- **Chacun son thème** (refonte des stats) : le Guerrier prend les PV et
+	  la riposte — c'est lui qui encaisse —, le Cavalier rend des PV et garde
+	  les PM et le burst, l'Archer garde la portée. Il était incohérent que
+	  le Cavalier cumule plus de PV que le Guerrier *et* la mobilité.
+	- **Le roster** (verbe de base toujours actif → compétence débloquée à la
+	  vétérance) :
+	  - **Guerrier** (14 PV, 3 PM, atk 3, riposte 3) — le mur : forêt à
+		coût 1, seul à l'aise en montagne, ZoC + Défendre. Atk à réduire
+		(3 → 2) si le mur s'avère trop rentable au playtest. Vétéran :
+		**Provocation** — les ennemis adjacents sont forcés de le cibler.
+	  - **Archer** (8 PV, 3 PM, atk 3, portée 2) — l'usure gratuite : frappe
+		à 2 sans riposte. Vétéran : **Flèche d'entrave** — la cible touchée
+		tombe à 1 PM au prochain tour (stoppe une charge, ralentit un boss).
+	  - **Cavalier** (11 PV, 5 PM, atk 4, riposte 2) — la punition :
+		**Charge** (+2 atk s'il a parcouru ≥ 3 cases avant d'attaquer),
+		forêt à coût 2 — la charge veut de la plaine ; il ne tient pas la
+		ligne, il traverse la carte pour exécuter ce qui s'isole. Vétéran :
+		**Percée** — après un kill, il peut dépenser ses PM restants.
+	  - **Éclaireur** *(nouveau — 7 PV, 4 PM, atk 2, vision 5)* —
+		l'information : tout terrain à coût 1 (sauf fleuve), et **Endurci**
+		(amendement du 18/07) : se soigne de 2 PV à chaque début de tour —
+		il survit en territoire hostile, loin des villages et de
+		l'Apothicaire, car sa seule valeur est d'être en vie. Moins bien
+		qu'un village (+3), sans effet en combat (les dégâts vont de 3
+		à 6) : du tempo d'exploration, pas de la tank ; pas de cumul avec
+		le soin de village (prendre le meilleur des deux). Trouve les
+		camps, évite les chain-pulls, capture loin, sert d'appât. Vétéran :
+		**Infiltration** — ne réveille plus les camps de creeps.
+	  - **Apothicaire** *(nouveau — 8 PV, 3 PM, atk 1)* — la seconde
+		chance : soigne 4 PV à un adjacent (l'action du tour). C'est du
+		contrôle de focus **en combat** (décision 14), pas un doublon du
+		soin hors combat des villages. Rare par nature : une par tableau,
+		prix du camp le plus dur. Vétéran : **Guérison** — soin 5 et
+		dissipe les malédictions (marques de boss et états à venir).
+	  - **Mage des braises** *(nouveau — 7 PV, 2 PM, atk 4, portée 2-3,
+		portée minimale 2 : nul au corps à corps, injouable sans escorte)* —
+		le brise-tortue : ses dégâts **ignorent les bonus de défense**
+		(terrain + posture). L'anti-retranchement que nos propres mécaniques
+		défensives rendent nécessaire, et le miroir des mécaniques de boss
+		côté joueur. Vétéran : **Terre brûlée** — son attaque enflamme la
+		case de la cible (2 dégâts à quiconque y termine son tour).
+	  - **Écartés** : le Piquier anti-cavalerie (contre pur, sans objet si
+		le scénario n'aligne pas de cavalerie en face) et le porte-étendard
+		à aura (doublon du Cri de guerre du héros).
+	- **XP de vétérance partagée** (remplace le compteur de last-hits — une
+	  Apothicaire ou un Éclaireur ne tuent jamais, mais ne sont pas censés
+	  mourir) : chaque kill donne **+1 XP à toutes les unités alliées à
+	  ≤ 3 hex de la victime** (rayon à retuner, 4 si trop lent), **+1 bonus
+	  au tueur** (2 au total) ; **finir un tableau vivant donne +1 XP**
+	  (remplace la « récompense de survie » du 14/07). Promotion à **5 XP** :
+	  un pur tueur promeut à son 3e kill, comme avant ; les soutiens
+	  promeuvent en accompagnant les combats et en survivant. La promotion
+	  conserve le bonus de stats (+1 atk, +2 PV max) et débloque la
+	  compétence de classe — compétence fixe, pas de choix entre deux : le
+	  choix au level-up reste la signature du héros. L'XP du héros (niveaux,
+	  gains d'équipe) ne change pas.
+	- Garde-fou playtest : si les compétences actives (Provocation, Entrave)
+	  alourdissent la manipulation, les passer en passif automatique — le
+	  déterminisme le permet sans rien casser.
+
 ## Feuille de route
 
 Chaque phase doit laisser un jeu jouable.
@@ -282,10 +352,24 @@ Chaque phase doit laisser un jeu jouable.
 	  test headless `tests/test_save.tscn` (aller-retour disque complet)
 - [ ] **Phase 11+** — campagne : enchaînement des tableaux, persistance
 	  héros/vétérans (recall à la Wesnoth), boss fights en climax de scénario.
-	  Récompense de survie (14/07/2026) : une unité qui termine un tableau
-	  vivante gagne de l'XP de vétérance (+1 kill au compteur, à équilibrer)
-	  en passant au tableau suivant — la vétérance reste au last-hit en cours
-	  de partie, mais garder ses troupes en vie paie aussi
+	  L'XP de survie en fin de tableau (+1 XP aux survivants) est définie par
+	  la décision 16
+- [x] **Phase 12a** — le roster en jeu (décision 16, 18/07/2026) : refonte
+	  des stats (Guerrier 14 PV/riposte 3, Cavalier 11 PV/atk 4 + Charge),
+	  les trois nouveaux types avec leurs verbes de base (Éclaireur Endurci,
+	  Apothicaire soin +4 adjacent, Mage portée 2-3/perce-défense) et leurs
+	  sprites chibi ; intégrés au scénario (Éclaireur dans l'armée de départ,
+	  Mage prisonnier du pont nord, Apothicaire prix du camp du gué). Carte
+	  de test « Terrain d'essai » depuis l'accueil (`Scenario.active`,
+	  roster complet des deux côtés, sans brouillard, sauvegarde coupée).
+	  **Animations de déplacement** validées au playtest : locomotion par
+	  bonds sur le chemin réel du Dijkstra (arc en cloche, squash/stretch,
+	  inclinaison, poussière à l'arrivée, flip directionnel, idle accéléré),
+	  logique instantanée / sprite qui rattrape (`Unit.walk_along`,
+	  `wait_walks` pour séquencer IA et creeps)
+- [ ] **Phase 12b** — XP de vétérance partagée (rayon 3, +1 au tueur, +1 de
+	  survie en fin de tableau, promotion à 5 XP) et les six compétences de
+	  vétéran (décision 16)
 
 ## État technique actuel (rappel)
 

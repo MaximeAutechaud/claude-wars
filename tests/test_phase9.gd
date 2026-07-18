@@ -76,9 +76,9 @@ func _ready() -> void:
 	check(boss.hp > hp_before, "le boss s'est soigné en sacrifiant")
 	check(boss.atk() >= atk_before + Boss.ENRAGE_ATK, "le boss s'enrage")
 
-	# ── Prisonnier vétéran du camp du gué ────────────────────────────────
+	# ── Prisonnier premium du camp du gué : l'Apothicaire (décision 16) ──
 	var gue: Dictionary = creeps.camps[4]
-	check(gue["prize_veteran"] == true, "le camp du gué promet un prisonnier vétéran")
+	check(gue["prize"] == Unit.Type.MEDIC, "le camp du gué promet l'Apothicaire")
 	var slayer := units.spawn(Vector2i(11, 5), 0, Unit.Type.TANK)
 	var team0_before: int = units.count_team(0)
 	while not creeps.alive_units(gue).is_empty():
@@ -94,8 +94,7 @@ func _ready() -> void:
 				and (child as Unit).type == gue["prize"] and (child as Unit) != slayer \
 				and Pathfinder.distance((child as Unit).cell, gue["center"]) <= 1:
 			prize = child as Unit
-	check(prize != null and prize.veteran, "le prisonnier du gué arrive vétéran")
-	check(prize != null and prize.type == Unit.Type.TANK, "et c'est un Char")
+	check(prize != null and prize.type == Unit.Type.MEDIC, "et c'est bien elle")
 
 	# ── Tuer le boss : XP bonus + victoire immédiate ─────────────────────
 	var xp_before: int = units.get_hero(0).xp

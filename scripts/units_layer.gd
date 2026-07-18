@@ -34,7 +34,7 @@ func _ready() -> void:
 # Une armée peut être menée par un boss ("type": "boss", "name": …) :
 # c'est alors lui le chef à abattre.
 func _spawn_armies() -> void:
-	var armies: Dictionary = Scenario.CURRENT["armies"]
+	var armies: Dictionary = Scenario.active["armies"]
 	for team: int in armies:
 		for udef: Dictionary in armies[team]:
 			var u := spawn(udef["cell"], team, Unit.TYPE_BY_ID[udef["type"]])
@@ -144,7 +144,8 @@ func show_reachable(unit: Unit) -> void:
 	var r := unit.attack_range()
 	if r > 1:
 		for target in Pathfinder.cells_in_range(unit.cell, r):
-			if target != unit.cell and map.is_in_bounds(target):
+			if target != unit.cell and map.is_in_bounds(target) \
+					and Pathfinder.distance(unit.cell, target) >= unit.min_range():
 				attack_cells[target] = true
 	else:
 		for cell: Vector2i in reachable_cells:
@@ -200,6 +201,7 @@ func cast_spell(caster: Unit, id: String, target_cell: Vector2i) -> void:
 		"blink":
 			caster.cell = target_cell
 			caster.position = to_local(map.to_global(map.map_to_local(target_cell)))
+			caster.blink_pop()   # téléportation : pop d'arrivée, pas de marche
 			# Atterrir en zone de contrôle ennemie coupe le mouvement restant
 			if (move_context(caster)["zoc"] as Dictionary).has(target_cell):
 				caster.remaining_mp = 0
@@ -217,6 +219,15 @@ func cast_spell(caster: Unit, id: String, target_cell: Vector2i) -> void:
 	if fog:
 		fog.recompute()   # Bond déplace le lanceur, la vision bouge
 
+# Soin de l'Apothicaire : l'action du tour, sur un allié adjacent blessé
+# (décision 16 — contrôle de focus en combat, pas un doublon des villages)
+func medic_heal(medic: Unit, target: Unit) -> void:
+	medic.defending = false   # soigner casse la posture Défendre
+	target.hp = mini(target.hp + Unit.MEDIC_HEAL, target.max_hp)
+	target.queue_redraw()
+	print("%s soigne %s : +%d PV → %d PV"
+			% [medic.unit_name(), target.unit_name(), Unit.MEDIC_HEAL, target.hp])
+
 # Ennemis attaquables par `unit` depuis sa case (distance <= portée).
 # Le joueur ne peut viser que ce qu'il voit ; l'IA et les creeps voient tout.
 func get_enemies_in_range(unit: Unit) -> Array[Unit]:
@@ -230,7 +241,7 @@ func get_enemies_in_range(unit: Unit) -> Array[Unit]:
 		if unit.team == Fog.PLAYER_TEAM and fog and not fog.is_visible_now(u.cell):
 			continue
 		var d := Pathfinder.distance(unit.cell, u.cell)
-		if d >= 1 and d <= unit.attack_range():
+		if d >= unit.min_range() and d <= unit.attack_range():
 			enemies.append(u)
 	return enemies
 
@@ -239,12 +250,14 @@ func defense_of(u: Unit) -> int:
 	return map.get_defense_bonus(u.cell) + (Unit.DEFEND_BONUS if u.defending else 0)
 
 func attack_damage(attacker: Unit, defender: Unit) -> int:
-	return maxi(1, attacker.atk() - defense_of(defender))
+	var def_bonus := 0 if attacker.pierces_defense() else defense_of(defender)
+	return maxi(1, attacker.atk() - def_bonus)
 
-# Riposte : 0 si le défenseur n'a pas la portée, sinon pondérée par les PV
-# qui lui resteraient après le coup
+# Riposte : 0 si le défenseur n'a pas la portée (max ou min), sinon pondérée
+# par les PV qui lui resteraient après le coup
 func counter_damage(attacker: Unit, defender: Unit, defender_hp_after: int) -> int:
-	if Pathfinder.distance(attacker.cell, defender.cell) > defender.attack_range():
+	var d := Pathfinder.distance(attacker.cell, defender.cell)
+	if d > defender.attack_range() or d < defender.min_range():
 		return 0
 	var ratio := defender_hp_after / float(defender.max_hp)
 	return maxi(1, roundi((defender.counter_atk() - defense_of(attacker)) * ratio))
@@ -266,6 +279,7 @@ func do_combat(attacker: Unit, defender: Unit) -> void:
 
 	attacker.defending = false   # attaquer casse la posture Défendre
 	var atk_dmg := attack_damage(attacker, defender)
+	attacker.charge_ready = false   # la Charge est consommée par l'attaque
 	defender.hp -= atk_dmg
 	print("%s attaque %s : -%d PV  →  défenseur à %d PV"
 			% [attacker.unit_name(), defender.unit_name(), atk_dmg, defender.hp])
@@ -301,28 +315,60 @@ func reset_team(team: int) -> void:
 			u.has_cast = false
 			u.remaining_mp = u.movement_points()
 			u.temp_atk_bonus = 0
+			u.charge_ready = false
 			for id in u.cooldowns:
 				u.cooldowns[id] = maxi(0, u.cooldowns[id] - 1)
 			u.queue_redraw()
 
 # cost = -1 → lu depuis reachable_cells (flow joueur)
 # cost >= 0 → fourni par l'appelant (flow IA)
+# La logique est instantanée (cell, PM, capture, brouillard) ; le sprite,
+# lui, marche case par case sur le chemin réel (Unit.walk_along).
 func move_unit(unit: Unit, target: Vector2i, cost: int = -1) -> void:
 	var actual_cost: int = reachable_cells.get(target, 0) if cost < 0 else cost
 	unit.defending = false   # bouger casse la posture Défendre
+	# Chemin réel pour la marche visuelle, avant de toucher à l'état
+	var parents: Dictionary = {}
+	Pathfinder.get_reachable(unit.cell, unit.remaining_mp, map, unit.type,
+			move_context(unit), parents)
+	var path := Pathfinder.path_to(target, parents)
+	# Charge du Cavalier : armée par l'élan — la distance hex à vol d'oiseau,
+	# pas le coût du chemin (charger à travers bois ne compte pas double)
+	if unit.type == Unit.Type.TANK:
+		unit.charge_ready = Pathfinder.distance(unit.cell, target) >= Unit.CHARGE_MIN_DIST
 	unit.cell = target
 	unit.remaining_mp -= actual_cost
 	# Finir en zone de contrôle ennemie stoppe net le mouvement (décision 14)
 	if (move_context(unit)["zoc"] as Dictionary).has(target):
 		unit.remaining_mp = 0
 	unit.has_moved = (unit.remaining_mp == 0)
-	unit.position = to_local(map.to_global(map.map_to_local(target)))
+	if path.is_empty():
+		unit.position = to_local(map.to_global(map.map_to_local(target)))
+	else:
+		var points := PackedVector2Array()
+		for cell in path:
+			points.append(to_local(map.to_global(map.map_to_local(cell))))
+		unit.walk_along(points)   # coroutine : le sprite rattrape la logique
 	unit.queue_redraw()
 	if villages:
 		villages.try_capture(unit)
 	if fog:
 		fog.recompute()
 	clear_reachable()
+
+# Une marche visuelle est-elle en cours quelque part ?
+func any_walking() -> bool:
+	for child in get_children():
+		if child is Unit and not child.is_queued_for_deletion() \
+				and (child as Unit).walking:
+			return true
+	return false
+
+# Attend la fin de toutes les marches (tours IA/creeps : on laisse le sprite
+# arriver avant de déclencher l'action suivante)
+func wait_walks() -> void:
+	while any_walking():
+		await get_tree().process_frame
 
 func _draw() -> void:
 	if not map.tile_set:

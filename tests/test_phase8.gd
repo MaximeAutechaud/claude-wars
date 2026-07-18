@@ -40,7 +40,7 @@ func _ready() -> void:
 	check(attacker.hp == 5 + Unit.VETERAN_HP, "les PV de promotion arrivent remplis")
 	check(attacker.atk() == Unit.STATS[Unit.Type.INFANTRY]["atk"] + Unit.VETERAN_ATK,
 			"+%d atk" % Unit.VETERAN_ATK)
-	check(attacker.unit_name() == "Infanterie vétéran", "nom « Infanterie vétéran »")
+	check(attacker.unit_name() == "Guerrier vétéran", "nom « Guerrier vétéran »")
 
 	# ── Le héros est exclu (il a ses niveaux d'XP) ───────────────────────
 	var hero := units.get_hero(0)
@@ -63,7 +63,7 @@ func _ready() -> void:
 		units.do_combat(creep, prey)
 		await get_tree().process_frame
 	check(creep.veteran, "un creep passe vétéran après 3 kills")
-	check(creep.unit_name() == "Bandit — Infanterie vétéran", "nom du bandit vétéran")
+	check(creep.unit_name() == "Bandit — Guerrier vétéran", "nom du bandit vétéran")
 
 	print("")
 	print("Phase 8 — %d échec(s)" % failures)

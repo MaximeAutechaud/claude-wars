@@ -11,8 +11,12 @@ class_name Pathfinder
 # - "zoc"     : cases voisines d'un ennemi — on peut y entrer, mais le
 #   mouvement s'y arrête (la case n'est pas étendue, sauf la case de départ :
 #   on peut toujours SORTIR d'une zone de contrôle).
+# `parents` (optionnel) : dictionnaire rempli avec cell -> case précédente
+# sur le meilleur chemin — sert à reconstruire le chemin réel (path_to)
+# pour la marche visuelle des unités.
 static func get_reachable(start: Vector2i, mp: int, map: GameMap,
-		unit_type: Unit.Type = Unit.Type.INFANTRY, ctx: Dictionary = {}) -> Dictionary:
+		unit_type: Unit.Type = Unit.Type.INFANTRY, ctx: Dictionary = {},
+		parents: Dictionary = {}) -> Dictionary:
 	var costs: Dictionary = Unit.STATS[unit_type]["costs"]
 	var zoc: Dictionary = ctx.get("zoc", {})
 	var blocked: Dictionary = ctx.get("blocked", {})
@@ -43,9 +47,20 @@ static func get_reachable(start: Vector2i, mp: int, map: GameMap,
 			var new_cost := cur_cost + move_cost
 			if new_cost <= mp and (not dist.has(nb) or new_cost < dist[nb]):
 				dist[nb] = new_cost
+				parents[nb] = cell
 				open.append(nb)
 
 	return dist
+
+# Chemin start → target reconstruit depuis `parents` (start exclu,
+# target inclus). Vide si target est la case de départ ou inatteignable.
+static func path_to(target: Vector2i, parents: Dictionary) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var cell := target
+	while parents.has(cell):
+		out.push_front(cell)
+		cell = parents[cell]
+	return out
 
 # Grille hexagonale flat-top, colonnes impaires décalées vers le bas
 # (odd-q, aligné sur le TileSet Godot : offset axis vertical).

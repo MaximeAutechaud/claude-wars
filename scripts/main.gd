@@ -1,6 +1,6 @@
 extends Node2D
 
-enum State { IDLE, UNIT_SELECTED, UNIT_MOVED, CASTING }
+enum State { IDLE, UNIT_SELECTED, UNIT_MOVED, CASTING, HEALING }
 
 const AI_TEAM := 1
 
@@ -21,6 +21,7 @@ const ZOOM_STEP := 1.15
 @onready var turn_label: Label       = $UI/TurnLabel
 @onready var attack_zone_btn: Button = $UI/AttackZoneButton
 @onready var defend_btn: Button      = $UI/DefendButton
+@onready var heal_btn: Button        = $UI/HealButton
 @onready var end_turn_btn: Button    = $UI/EndTurnButton
 @onready var end_screen: ColorRect   = $UI/EndScreen
 @onready var end_label: Label        = $UI/EndScreen/EndBox/EndLabel
@@ -66,6 +67,9 @@ func _ready() -> void:
 		SaveGame.pending = {}
 	else:
 		creeps.spawn_camps(units_layer)
+	# Carte de test : pas de sauvegarde (elle écraserait la campagne)
+	if Scenario.active.get("sandbox", false):
+		($UI/SaveButton as Button).hide()
 	# La caméra démarre sur le héros du joueur (grande carte sous brouillard)
 	var hero := units_layer.get_hero(0)
 	var start_cell: Vector2i = hero.cell if hero != null else map.get_map_size() / 2
@@ -142,6 +146,10 @@ func _unhandled_input(event: InputEvent) -> void:
 # ── Logique de clic ──────────────────────────────────────────────────────────
 
 func _handle_click(cell: Vector2i) -> void:
+	# Pas d'ordre pendant une marche : on laisse le sprite arriver (évite
+	# aussi deux tweens de position concurrents sur la même unité)
+	if units_layer.any_walking():
+		return
 	match state:
 		State.IDLE:
 			var unit := units_layer.get_unit_at(cell)
@@ -195,6 +203,15 @@ func _handle_click(cell: Vector2i) -> void:
 			else:
 				_deselect()
 
+		State.HEALING:
+			if units_layer.spell_cells.has(cell):
+				var medic := selected_unit
+				units_layer.medic_heal(medic, units_layer.get_unit_at(cell))
+				_spawn_float_text(cell, "+%d PV" % Unit.MEDIC_HEAL)
+				medic.has_moved = true
+				medic.queue_redraw()
+			_deselect()
+
 # ── Transitions d'état ───────────────────────────────────────────────────────
 
 func _select(unit: Unit) -> void:
@@ -208,6 +225,7 @@ func _select(unit: Unit) -> void:
 	attack_zone_btn.show()
 	attack_zone_btn.text = "Zone d'attaque"
 	defend_btn.show()
+	heal_btn.visible = not _medic_targets(unit).is_empty()
 	_update_spell_bar()
 	_update_turn_label()
 
@@ -215,8 +233,9 @@ func _after_move() -> void:
 	attack_zone_btn.hide()
 	_show_unit_panel(selected_unit)   # rafraîchit PM restants / déf. terrain
 	_mark_attackable(units_layer.get_enemies_in_range(selected_unit))
-	# On reste sélectionné s'il y a une cible OU un sort encore lançable
-	if attackable_enemies.is_empty() \
+	heal_btn.visible = not _medic_targets(selected_unit).is_empty()
+	# On reste sélectionné s'il y a une cible, un sort lançable ou un soin
+	if attackable_enemies.is_empty() and not heal_btn.visible \
 			and not (selected_unit.is_hero() and selected_unit.has_ready_spell()):
 		_deselect()
 		return
@@ -262,12 +281,13 @@ func _deselect() -> void:
 	units_layer.clear_reachable()
 	attack_zone_btn.hide()
 	defend_btn.hide()
+	heal_btn.hide()
 	spell_bar.hide()
 	unit_panel.hide()
 	_update_turn_label()
 
 func _end_turn() -> void:
-	if ai_thinking or game_over:
+	if ai_thinking or game_over or units_layer.any_walking():
 		return
 	_deselect()
 	units_layer.reset_team(current_player)
@@ -299,14 +319,21 @@ func _run_creep_phase() -> void:
 	_maybe_show_levelup()
 
 # Début de tour d'un camp : soin des unités stationnées sur un village
-# allié ou un camp de repos conquis
+# allié ou un camp de repos conquis ; l'Éclaireur, lui, se soigne partout
+# (Endurci, décision 16) — le meilleur des deux, jamais le cumul
 func _start_turn(team: int) -> void:
 	for child in units_layer.get_children():
 		if child is Unit and (child as Unit).team == team:
 			var u := child as Unit
-			if u.hp < u.max_hp and (villages.owner_of(u.cell) == team \
-					or creeps.rest_owner_of(u.cell) == team):
-				u.hp = mini(u.hp + Villages.VILLAGE_HEAL, u.max_hp)
+			if u.hp >= u.max_hp:
+				continue
+			var heal := 0
+			if villages.owner_of(u.cell) == team or creeps.rest_owner_of(u.cell) == team:
+				heal = Villages.VILLAGE_HEAL
+			elif u.type == Unit.Type.SCOUT:
+				heal = Unit.SCOUT_REGEN
+			if heal > 0:
+				u.hp = mini(u.hp + heal, u.max_hp)
 				u.queue_redraw()
 
 # Un kill peut être le dernier creep d'un camp → prisonnier libéré.
@@ -381,9 +408,11 @@ func _on_restart_pressed() -> void:
 # ── Sauvegarde / menu (décision 15) ──────────────────────────────────────────
 
 # Sauvegarde manuelle, pendant le tour du joueur uniquement (l'état d'un
-# tour IA ou neutre en cours n'est pas capturable proprement)
+# tour IA ou neutre en cours n'est pas capturable proprement). Désactivée
+# sur la carte de test : elle écraserait la partie de campagne.
 func _on_save_pressed() -> void:
-	if ai_thinking or game_over or creep_phase or current_player != 0:
+	if ai_thinking or game_over or creep_phase or current_player != 0 \
+			or Scenario.active.get("sandbox", false):
 		return
 	_deselect()
 	SaveGame.write(SaveGame.capture(self))
@@ -533,7 +562,7 @@ func _run_ai_turn() -> void:
 	for unit: Unit in ai_units:
 		if not is_instance_valid(unit) or unit.has_moved:
 			continue
-		_ai_act_unit(unit)
+		await _ai_act_unit(unit)
 		if _check_game_over():
 			ai_thinking = false
 			return
@@ -563,7 +592,7 @@ func _ai_act_unit(unit: Unit) -> void:
 
 	# Héros IA : comportement de commandant, sauf s'il est seul (il se bat)
 	if unit.is_hero() and units_layer.count_team(AI_TEAM) > 1:
-		_ai_act_hero(unit)
+		await _ai_act_hero(unit)
 		return
 
 	# Boss chef d'armée : phases/sacrifice + malédiction (actions gratuites,
@@ -602,6 +631,7 @@ func _ai_act_unit(unit: Unit) -> void:
 		var vcell := AIPlayer.nearest_capturable_village(unit, reachable, villages, units_layer)
 		if vcell != Vector2i(-99, -99):
 			units_layer.move_unit(unit, vcell, reachable.get(vcell, 0))
+			await units_layer.wait_walks()
 			if is_instance_valid(unit):
 				var after_cap := units_layer.get_enemies_in_range(unit)
 				if not after_cap.is_empty():
@@ -617,6 +647,7 @@ func _ai_act_unit(unit: Unit) -> void:
 	if dest != unit.cell:
 		var cost: int = reachable.get(dest, 0)
 		units_layer.move_unit(unit, dest, cost)
+		await units_layer.wait_walks()
 	else:
 		unit.has_moved = true
 		unit.queue_redraw()
@@ -640,6 +671,7 @@ func _ai_act_hero(unit: Unit) -> void:
 		var safe := AIPlayer.best_retreat(unit, flee, units_layer)
 		if safe != unit.cell:
 			units_layer.move_unit(unit, safe, flee.get(safe, 0))
+			await units_layer.wait_walks()
 		unit.has_moved = true
 		unit.queue_redraw()
 		return
@@ -674,6 +706,7 @@ func _ai_act_hero(unit: Unit) -> void:
 	var dest := AIPlayer.best_hero_position(unit, reachable, units_layer)
 	if dest != unit.cell:
 		units_layer.move_unit(unit, dest, reachable.get(dest, 0))
+		await units_layer.wait_walks()
 
 	# Après placement : ne frappe que si ça achève une cible
 	if is_instance_valid(unit):
@@ -712,8 +745,10 @@ func _show_unit_panel(u: Unit) -> void:
 
 	hp_label.text = "PV : %d / %d" % [u.hp, u.max_hp]
 	var defense := units_layer.defense_of(u)
-	stats_label.text = "Attaque : %d    Riposte : %d\nPortée : %d    Dépl. : %d/%d\nVision : %d    Défense : +%d%s" % [
-		u.atk(), u.counter_atk(), u.attack_range(),
+	var range_txt := str(u.attack_range()) if u.min_range() <= 1 \
+			else "%d-%d" % [u.min_range(), u.attack_range()]
+	stats_label.text = "Attaque : %d    Riposte : %d\nPortée : %s    Dépl. : %d/%d\nVision : %d    Défense : +%d%s" % [
+		u.atk(), u.counter_atk(), range_txt,
 		u.remaining_mp, u.movement_points(), u.vision(), defense,
 		"  (en garde)" if u.defending else "",
 	]
@@ -747,6 +782,28 @@ func _on_attack_zone_pressed() -> void:
 	units_layer.toggle_attack_zone()
 	var showing := units_layer._show_attack_zone
 	attack_zone_btn.text = "Masquer zone" if showing else "Zone d'attaque"
+
+# Cibles de soin de l'Apothicaire : alliés adjacents blessés (décision 16)
+func _medic_targets(u: Unit) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if u == null or not is_instance_valid(u) or u.type != Unit.Type.MEDIC:
+		return out
+	for nb in Pathfinder.get_neighbors(u.cell):
+		var ally := units_layer.get_unit_at(nb)
+		if ally != null and ally.team == u.team and ally.hp < ally.max_hp:
+			out.append(nb)
+	return out
+
+# Soin de l'Apothicaire : c'est l'action du tour (possible après déplacement)
+func _on_heal_pressed() -> void:
+	if selected_unit == null or ai_thinking or game_over:
+		return
+	var targets := _medic_targets(selected_unit)
+	if targets.is_empty():
+		return
+	state = State.HEALING
+	units_layer.show_spell_targets(targets)
+	_update_turn_label()
 
 # Posture Défendre : remplace l'action du tour, +DEFEND_BONUS de défense
 # jusqu'à la prochaine action de l'unité (décision 14)
@@ -801,6 +858,7 @@ func _update_turn_label() -> void:
 		State.UNIT_SELECTED: " — %s : déplacer ou attaquer" % unit_label,
 		State.UNIT_MOVED:    " — %s : attaquer ou cliquer ailleurs" % unit_label,
 		State.CASTING:       " — %s : choisir la cible" % spell_name,
+		State.HEALING:       " — %s : choisir l'allié à soigner" % unit_label,
 	}
 	var suffix: String = " — Réflexion…" if ai_thinking else hints.get(state, "")
 	turn_label.text = "Tour %d — %s%s" % [turn_count, player_names[current_player], suffix]

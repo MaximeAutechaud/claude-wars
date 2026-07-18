@@ -55,7 +55,7 @@ func _build_tileset() -> void:
 	tile_set = ts
 
 func _init_grid() -> void:
-	var rows: Array = Scenario.CURRENT["terrain"]
+	var rows: Array = Scenario.active["terrain"]
 	map_size = Vector2i((rows[0] as String).length(), rows.size())
 	grid.resize(map_size.x)
 	for col in map_size.x:

@@ -60,6 +60,12 @@ custom_minimum_size = Vector2(280, 44)
 theme_override_font_sizes/font_size = 18
 text = "Nouvelle partie"
 
+[node name="TestMapButton" type="Button" parent="Center/Box"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 44)
+theme_override_font_sizes/font_size = 18
+text = "Carte de test"
+
 [node name="QuitButton" type="Button" parent="Center/Box"]
 layout_mode = 2
 custom_minimum_size = Vector2(280, 44)
@@ -68,4 +74,5 @@ text = "Quitter"
 
 [connection signal="pressed" from="Center/Box/ContinueButton" to="." method="_on_continue_pressed"]
 [connection signal="pressed" from="Center/Box/NewGameButton" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="Center/Box/TestMapButton" to="." method="_on_test_map_pressed"]
 [connection signal="pressed" from="Center/Box/QuitButton" to="." method="_on_quit_pressed"]

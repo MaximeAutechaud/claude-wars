@@ -1,12 +1,13 @@
 class_name Unit
 extends Node2D
 
-enum Type { INFANTRY, TANK, ARCHER, HERO, BOSS }
+enum Type { INFANTRY, TANK, ARCHER, HERO, BOSS, SCOUT, MEDIC, MAGE }
 
 # Ids du format de scénario (Scenario.CURRENT) vers les types
 const TYPE_BY_ID: Dictionary = {
 	"infantry": Type.INFANTRY, "tank": Type.TANK, "archer": Type.ARCHER,
 	"hero": Type.HERO, "boss": Type.BOSS,
+	"scout": Type.SCOUT, "medic": Type.MEDIC, "mage": Type.MAGE,
 }
 
 const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30), Color(0.95, 0.74, 0.18)]
@@ -14,13 +15,16 @@ const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30), Color(0.95
 # Équipe des creeps : ignorée par les conditions de victoire, ne capture pas
 const NEUTRAL_TEAM := 2
 
-# Stats et coûts de terrain par type d'unité.
-# "range" : portée d'attaque en distance Manhattan.
+# Stats et coûts de terrain par type d'unité (décision 16 : « chacun son
+# thème » — le Guerrier encaisse, le Cavalier court et frappe, l'Archer tire).
+# "range" : portée d'attaque en distance hex.
+# "min_range" : portée minimale (Mage : nul au corps à corps), 1 par défaut.
 # "counter" : dégâts de contre-attaque (subis seulement si le défenseur a la portée).
 # "vision" : rayon de vision sous brouillard de guerre.
+# "pierce" : les dégâts ignorent les bonus de défense (terrain + posture).
 const STATS: Dictionary = {
 	Type.INFANTRY: {
-		"name": "Guerrier", "max_hp": 10, "mp": 3, "atk": 3, "counter": 2, "range": 1,
+		"name": "Guerrier", "max_hp": 14, "mp": 3, "atk": 3, "counter": 3, "range": 1,
 		"vision": 3,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
@@ -29,7 +33,7 @@ const STATS: Dictionary = {
 		},
 	},
 	Type.TANK: {
-		"name": "Cavalier", "max_hp": 14, "mp": 5, "atk": 5, "counter": 3, "range": 1,
+		"name": "Cavalier", "max_hp": 11, "mp": 5, "atk": 4, "counter": 2, "range": 1,
 		"vision": 2,
 		"costs": {
 			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
@@ -64,6 +68,33 @@ const STATS: Dictionary = {
 			GameMap.Terrain.RIVER: 99,
 		},
 	},
+	Type.SCOUT: {
+		"name": "Éclaireur", "max_hp": 7, "mp": 4, "atk": 2, "counter": 1, "range": 1,
+		"vision": 5,
+		"costs": {
+			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
+			GameMap.Terrain.MOUNTAIN: 1, GameMap.Terrain.ROAD: 1,
+			GameMap.Terrain.RIVER: 99,
+		},
+	},
+	Type.MEDIC: {
+		"name": "Apothicaire", "max_hp": 8, "mp": 3, "atk": 1, "counter": 1, "range": 1,
+		"vision": 3,
+		"costs": {
+			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 1,
+			GameMap.Terrain.MOUNTAIN: 2, GameMap.Terrain.ROAD: 1,
+			GameMap.Terrain.RIVER: 99,
+		},
+	},
+	Type.MAGE: {
+		"name": "Mage des braises", "max_hp": 7, "mp": 2, "atk": 4, "counter": 1,
+		"range": 3, "min_range": 2, "pierce": true, "vision": 2,
+		"costs": {
+			GameMap.Terrain.PLAINS: 1,  GameMap.Terrain.FOREST: 2,
+			GameMap.Terrain.MOUNTAIN: 3, GameMap.Terrain.ROAD: 1,
+			GameMap.Terrain.RIVER: 99,
+		},
+	},
 }
 
 # XP supplémentaire créditée au héros du camp qui abat un boss
@@ -80,6 +111,16 @@ const LEVELUP_ATK := 1
 const VETERAN_KILLS := 3   # kills pour la promotion
 const VETERAN_ATK := 1
 const VETERAN_HP := 2      # PV max ajoutés, remplis à la promotion
+
+# ── Verbes de classe (décision 16) ───────────────────────────────────────────
+# Charge du Cavalier : bonus d'attaque si le déplacement qui précède couvre
+# au moins CHARGE_MIN_DIST cases de distance hex (l'élan, pas le chemin)
+const CHARGE_BONUS := 2
+const CHARGE_MIN_DIST := 3
+# Endurci de l'Éclaireur : auto-soin en début de tour hors village
+const SCOUT_REGEN := 2
+# Soin de l'Apothicaire : l'action du tour, sur un allié adjacent
+const MEDIC_HEAL := 4
 
 # ── Posture Défendre (décision 14) ───────────────────────────────────────────
 # Se mettre en garde remplace l'action du tour ; le bonus de défense tient
@@ -108,9 +149,32 @@ const TEXTURES: Dictionary = {
 		preload("res://assets/units/boss.svg"),
 		preload("res://assets/units/boss_2.svg"),
 	],
+	Type.SCOUT: [
+		preload("res://assets/units/scout.svg"),
+		preload("res://assets/units/scout_2.svg"),
+	],
+	Type.MEDIC: [
+		preload("res://assets/units/medic.svg"),
+		preload("res://assets/units/medic_2.svg"),
+	],
+	Type.MAGE: [
+		preload("res://assets/units/mage.svg"),
+		preload("res://assets/units/mage_2.svg"),
+	],
 }
 
 const IDLE_FRAME_TIME := 0.5
+
+# ── Marche visuelle (animations de déplacement, style rétro) ────────────────
+# La logique de jeu est instantanée (move_unit met tout à jour au clic) ;
+# seul le sprite voyage, case par case sur le chemin réel du Dijkstra.
+# Locomotion par bonds : chaque case est un petit saut en cloche — étirement
+# en l'air, écrasement à l'atterrissage, inclinaison dans le sens de la
+# course, poussière à l'arrivée (juice procédural, pas de frames dédiées).
+const WALK_STEP := 0.16        # secondes par case (un bond)
+const WALK_STEP_FAST := 0.12   # monture et éclaireur : plus vifs
+const HOP_HEIGHT := 8.0        # hauteur de l'arc du bond (px)
+const LEAN_DEG := 7.0          # inclinaison du sprite dans le sens du mouvement
 
 const TEAM_SHADER := preload("res://assets/team_color.gdshader")
 
@@ -143,6 +207,12 @@ var boss_phase := 0
 
 # Posture Défendre — cassée par toute nouvelle action (voir UnitsLayer)
 var defending := false
+
+# Charge du Cavalier : armée par un déplacement d'élan, consommée à l'attaque
+var charge_ready := false
+
+# Marche visuelle en cours (le tour IA/creeps attend la fin avant d'enchaîner)
+var walking := false
 
 # Progression (héros uniquement)
 var xp    := 0
@@ -190,7 +260,10 @@ func movement_points() -> int:
 	return STATS[type]["mp"]
 
 func atk() -> int:
-	return STATS[type]["atk"] + _atk_bonus + temp_atk_bonus
+	var total: int = STATS[type]["atk"] + _atk_bonus + temp_atk_bonus
+	if charge_ready:
+		total += CHARGE_BONUS
+	return total
 
 func spell_ready(id: String) -> bool:
 	return not has_cast and learned_spells.has(id) and cooldowns.get(id, 0) == 0
@@ -258,25 +331,115 @@ func _level_up_flash() -> void:
 func attack_range() -> int:
 	return STATS[type]["range"]
 
+# Portée minimale : en deçà, ni attaque ni riposte (Mage nul au corps à corps)
+func min_range() -> int:
+	return STATS[type].get("min_range", 1)
+
+# Dégâts qui ignorent les bonus de défense (terrain + posture) — le Mage
+func pierces_defense() -> bool:
+	return STATS[type].get("pierce", false)
+
 func vision() -> int:
 	return STATS[type]["vision"]
 
 var _idle_frame := 0
+var _idle_timer: Timer
+var _sprite_base_y := 0.0
 
 func _ready() -> void:
 	sprite.texture = TEXTURES[type][0]
 	var mat := ShaderMaterial.new()
 	mat.shader = TEAM_SHADER
 	sprite.material = mat
-	var timer := Timer.new()
-	timer.wait_time = IDLE_FRAME_TIME
-	timer.autostart = true
-	timer.timeout.connect(_advance_idle_frame)
-	add_child(timer)
+	_sprite_base_y = sprite.position.y
+	# Les rouges regardent vers la gauche (face au joueur, façon Advance Wars)
+	sprite.flip_h = (team == 1)
+	_idle_timer = Timer.new()
+	_idle_timer.wait_time = IDLE_FRAME_TIME
+	_idle_timer.autostart = true
+	_idle_timer.timeout.connect(_advance_idle_frame)
+	add_child(_idle_timer)
 
 func _advance_idle_frame() -> void:
 	_idle_frame = 1 - _idle_frame
 	sprite.texture = TEXTURES[type][_idle_frame]
+
+# ── Marche visuelle ──────────────────────────────────────────────────────────
+
+# Fait bondir le sprite le long de `points` (positions locales au parent,
+# une par case du chemin) : un saut en cloche par case, sprite retourné et
+# incliné selon la direction, frames d'idle accélérées.
+func walk_along(points: PackedVector2Array) -> void:
+	if points.is_empty():
+		return
+	walking = true
+	_idle_timer.wait_time = IDLE_FRAME_TIME / 3.0
+	var step := WALK_STEP_FAST if type in [Type.TANK, Type.SCOUT] else WALK_STEP
+	var tw := create_tween()
+	var prev := position
+	for p in points:
+		var dx := p.x - prev.x
+		tw.tween_callback(_step_start.bind(dx, step))
+		tw.tween_property(self, "position", p, step)
+		prev = p
+	await tw.finished
+	_spawn_dust(position)
+	walking = false
+	_idle_timer.wait_time = IDLE_FRAME_TIME
+	sprite.rotation_degrees = 0.0
+	sprite.scale = Vector2.ONE
+	sprite.position.y = _sprite_base_y
+	queue_redraw()   # applique le grisé « a déjà agi » à l'arrivée
+
+# Oriente le sprite selon la direction horizontale (les segments verticaux
+# gardent l'orientation courante)
+func _face(dx: float) -> void:
+	if absf(dx) > 0.5:
+		sprite.flip_h = dx < 0.0
+
+# Un bond : le sprite s'incline, monte en cloche en s'étirant, retombe et
+# s'écrase brièvement à l'atterrissage — c'est ce qui vend le poids
+func _step_start(dx: float, step: float) -> void:
+	_face(dx)
+	if absf(dx) > 0.5:
+		sprite.rotation_degrees = LEAN_DEG * signf(dx)
+	var t := create_tween()
+	t.tween_property(sprite, "position:y", _sprite_base_y - HOP_HEIGHT, step * 0.4) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(sprite, "scale", Vector2(0.93, 1.08), step * 0.4)
+	t.chain().tween_property(sprite, "position:y", _sprite_base_y, step * 0.45) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(sprite, "scale", Vector2.ONE, step * 0.45)
+	t.chain().tween_property(sprite, "scale", Vector2(1.12, 0.86), step * 0.075)
+	t.chain().tween_property(sprite, "scale", Vector2.ONE, step * 0.075)
+
+# Nuage de poussière procédural au point d'arrivée
+func _spawn_dust(at: Vector2) -> void:
+	if get_parent() == null:
+		return
+	var p := CPUParticles2D.new()
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.amount = 5
+	p.lifetime = 0.3
+	p.position = at + Vector2(0, 10)
+	p.direction = Vector2(0, -1)
+	p.spread = 70.0
+	p.gravity = Vector2(0, 60)
+	p.initial_velocity_min = 12.0
+	p.initial_velocity_max = 26.0
+	p.scale_amount_min = 1.5
+	p.scale_amount_max = 2.6
+	p.color = Color(0.82, 0.78, 0.68, 0.8)
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+	get_parent().add_child(p)
+
+# Pop d'arrivée du Bond : une téléportation, pas une marche
+func blink_pop() -> void:
+	scale = Vector2(0.35, 1.5)
+	create_tween().tween_property(self, "scale", Vector2.ONE, 0.25) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _draw() -> void:
 	# Couleur d'équipe : le shader remplace les zones magenta du sprite
@@ -284,8 +447,10 @@ func _draw() -> void:
 	var mat := sprite.material as ShaderMaterial
 	if mat:
 		mat.set_shader_parameter("team_color", TEAM_COLORS[team])
-	# Unité qui a déjà agi : sprite entier assombri
-	sprite.self_modulate = Color(0.55, 0.55, 0.55) if has_moved else Color.WHITE
+	# Unité qui a déjà agi : sprite entier assombri — mais seulement une fois
+	# arrivée (grisée en pleine marche, la course ferait fantôme)
+	sprite.self_modulate = Color(0.55, 0.55, 0.55) if has_moved and not walking \
+			else Color.WHITE
 
 	# Contours d'hexagone sur la case : blanc = sélectionnée, rouge = attaquable
 	var hw := GameMap.TILE_W * 0.5 - 3.0

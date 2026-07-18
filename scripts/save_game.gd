@@ -70,7 +70,7 @@ static func capture(main: Node2D) -> Dictionary:
 
 	return {
 		"version": VERSION,
-		"scenario": Scenario.CURRENT["name"],
+		"scenario": Scenario.active["name"],
 		"turn": main.turn_count,
 		"ai_alerted": main.ai_alerted,
 		"units": units, "camps": camps,
@@ -133,6 +133,7 @@ static func _unit_to_dict(u: Unit) -> Dictionary:
 		"has_moved": u.has_moved, "remaining_mp": u.remaining_mp,
 		"home_cell": _cell_to_arr(u.home_cell), "name": u.display_name,
 		"kills": u.kills, "veteran": u.veteran, "defending": u.defending,
+		"charge_ready": u.charge_ready,
 		"atk_bonus": u._atk_bonus, "counter_bonus": u._counter_bonus,
 		"xp": u.xp, "level": u.level, "pending_levelups": u.pending_levelups,
 		"spells": u.learned_spells, "cooldowns": u.cooldowns,
@@ -156,6 +157,7 @@ static func _unit_from_dict(units_layer: UnitsLayer, d: Dictionary) -> Unit:
 	u.kills = int(d["kills"])
 	u.veteran = bool(d["veteran"])
 	u.defending = bool(d["defending"])
+	u.charge_ready = bool(d.get("charge_ready", false))
 	u._atk_bonus = int(d["atk_bonus"])
 	u._counter_bonus = int(d["counter_bonus"])
 	u.xp = int(d["xp"])

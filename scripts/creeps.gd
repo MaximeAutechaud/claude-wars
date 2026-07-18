@@ -36,7 +36,7 @@ var camps: Array = []
 # Les camps sont décrits par le scénario courant (décision 13, phase 9).
 # Un camp peut abriter un boss ("boss": true) : mécaniques dans boss.gd.
 func spawn_camps(units_layer: UnitsLayer) -> void:
-	for def: Dictionary in Scenario.CURRENT["camps"]:
+	for def: Dictionary in Scenario.active["camps"]:
 		var camp := { "center": def["center"],
 				"prize": Unit.TYPE_BY_ID[def["prize"]],
 				"prize_veteran": def.get("prize_veteran", false),
@@ -136,9 +136,9 @@ func run_turn(units_layer: UnitsLayer, should_stop: Callable) -> void:
 				continue
 			var acted: bool
 			if u.is_boss():
-				acted = _act_boss(u, camp, units_layer)
+				acted = await _act_boss(u, camp, units_layer)
 			else:
-				acted = _act_creep(u, camp, units_layer)
+				acted = await _act_creep(u, camp, units_layer)
 			if should_stop.call():
 				return
 			if acted:
@@ -190,6 +190,7 @@ func _act_creep(u: Unit, camp: Dictionary, units_layer: UnitsLayer) -> bool:
 	var acted := dest != u.cell
 	if acted:
 		units_layer.move_unit(u, dest, leashed.get(dest, 0))
+		await units_layer.wait_walks()
 
 	# Attaque après déplacement
 	if is_instance_valid(u):
@@ -212,7 +213,7 @@ func _act_boss(boss: Unit, camp: Dictionary, units_layer: UnitsLayer) -> bool:
 	Boss.phase_check(boss, allies, units_layer)
 	Boss.act_doom(boss, units_layer, map)
 	if is_instance_valid(boss):
-		_act_creep(boss, camp, units_layer)
+		await _act_creep(boss, camp, units_layer)
 	return true   # un boss mérite toujours sa pause dramatique
 
 # Le camp se rendort quand tous ses creeps sont rentrés et que personne ne rôde

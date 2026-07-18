@@ -33,16 +33,25 @@ func recompute() -> void:
 	if not is_node_ready():
 		return   # spawns initiaux : main._ready fera le premier recompute
 	visible_now.clear()
-	for child in units_layer.get_children():
-		if not (child is Unit) or child.is_queued_for_deletion():
-			continue
-		var u := child as Unit
-		if u.team != PLAYER_TEAM:
-			continue
-		for cell in Pathfinder.cells_in_range(u.cell, u.vision()):
-			if map.is_in_bounds(cell):
+	if Scenario.active.get("reveal_all", false):
+		# Carte de test : pas de brouillard, tout le tableau est révélé
+		var size := map.get_map_size()
+		for col in size.x:
+			for row in size.y:
+				var cell := Vector2i(col, row)
 				visible_now[cell] = true
 				explored[cell] = true
+	else:
+		for child in units_layer.get_children():
+			if not (child is Unit) or child.is_queued_for_deletion():
+				continue
+			var u := child as Unit
+			if u.team != PLAYER_TEAM:
+				continue
+			for cell in Pathfinder.cells_in_range(u.cell, u.vision()):
+				if map.is_in_bounds(cell):
+					visible_now[cell] = true
+					explored[cell] = true
 
 	# Les unités non joueur ne sont affichées que dans la vision actuelle
 	for child in units_layer.get_children():

@@ -25,10 +25,19 @@ func _on_continue_pressed() -> void:
 	var save := SaveGame.read()
 	if save.is_empty():
 		return
+	Scenario.active = Scenario.CURRENT
 	SaveGame.pending = save
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 func _on_new_game_pressed() -> void:
+	Scenario.active = Scenario.CURRENT
+	SaveGame.pending = {}
+	get_tree().change_scene_to_file(MAIN_SCENE)
+
+# Carte de test : petit tableau sans brouillard avec le roster complet des
+# deux côtés — pour vérifier sprites, animations et mécaniques en jouant
+func _on_test_map_pressed() -> void:
+	Scenario.active = Scenario.SANDBOX
 	SaveGame.pending = {}
 	get_tree().change_scene_to_file(MAIN_SCENE)
 

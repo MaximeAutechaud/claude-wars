@@ -42,7 +42,7 @@ func _ready() -> void:
 	check(not main._check_game_over(), "les creeps n'affectent pas la fin de partie")
 	var a_creep: Unit = creeps.alive_units(creeps.camps[0])[0]
 	check(not a_creep.can_capture(), "un creep ne peut pas capturer de village")
-	check(creeps.camps[2]["prize"] == Unit.Type.TANK, "le camp du pont garde un Char")
+	check(creeps.camps[2]["prize"] == Unit.Type.MAGE, "le camp du pont garde le Mage des braises")
 	var camp0_center: Vector2i = creeps.camps[0]["center"]
 	check(creeps.rest_owner_of(camp0_center) == -2, "pas de camp de repos au départ")
 

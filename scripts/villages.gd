@@ -12,7 +12,7 @@ var _tex: Texture2D = preload("res://assets/tiles/village.svg")
 
 func _ready() -> void:
 	# cell -> propriétaire initial (-1 = neutre), depuis le scénario courant
-	owners = (Scenario.CURRENT["villages"] as Dictionary).duplicate()
+	owners = (Scenario.active["villages"] as Dictionary).duplicate()
 	queue_redraw()
 
 func is_village(cell: Vector2i) -> bool:
