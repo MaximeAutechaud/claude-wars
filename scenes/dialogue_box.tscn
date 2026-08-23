@@ -22,9 +22,20 @@ layout_mode = 1
 anchor_left = 0.33
 anchor_top = 0.08
 anchor_right = 0.67
-anchor_bottom = 0.74
+anchor_bottom = 0.70
 mouse_filter = 2
 script = ExtResource("2_portrait")
+
+[node name="TextureRect" type="TextureRect" parent="Portrait"]
+visible = false
+layout_mode = 1
+anchor_left = 0.05
+anchor_top = 0.03
+anchor_right = 0.95
+anchor_bottom = 0.97
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="NameTag" type="Panel" parent="."]
 layout_mode = 1

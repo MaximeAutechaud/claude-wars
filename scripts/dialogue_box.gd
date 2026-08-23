@@ -19,6 +19,12 @@ const COMMA_PAUSE := 0.10          # pause supplémentaire sur ,
 const BUMP_AMPLITUDE := 5.0        # px de tremblement du portrait qui parle
 const BUMP_SPEED := 14.0
 
+# Un blip toutes les BLIP_EVERY lettres (pas une par lettre) : à la vitesse
+# du typewriter, un blip par caractère se chevauche et sonne comme une
+# mitraillette plutôt que des blips distincts façon Animal Crossing.
+const BLIP_EVERY := 2
+const BLIP_VOLUME_DB := -6.0
+
 const PALETTE := [
 	Color(0.30, 0.60, 1.0), Color(1.0, 0.35, 0.35), Color(0.45, 0.85, 0.55),
 	Color(1.0, 0.75, 0.25), Color(0.75, 0.55, 1.0), Color(0.35, 0.85, 0.85),
@@ -40,9 +46,11 @@ var pause_timer: float = 0.0
 var talk_time: float = 0.0
 var speaker_colors: Dictionary = {}
 var blip_wav: AudioStreamWAV
+var _blip_count := 0
 
 func _ready() -> void:
 	blip_wav = _make_blip_wav()
+	blip_player.volume_db = BLIP_VOLUME_DB
 	visible = false
 	continue_arrow.visible = false
 	set_process(false)
@@ -78,7 +86,9 @@ func _reveal_next_char() -> void:
 	text_label.visible_characters = chars_shown
 	var ch := _char_at(chars_shown - 1)
 	if ch != "" and ch != " " and ch != "\n":
-		_play_blip()
+		_blip_count += 1
+		if _blip_count % BLIP_EVERY == 0:
+			_play_blip()
 	if finishing:
 		_end_line()
 	elif ch == "." or ch == "!" or ch == "?":
@@ -116,9 +126,10 @@ func _advance_line() -> void:
 	var line: Dictionary = lines[index]
 	var speaker: String = str(line.get("speaker", "???"))
 	var color: Color = line.get("color", _color_for(speaker))
+	var portrait_tex: Texture2D = line.get("portrait", Portraits.for_speaker(speaker))
 	name_label.text = speaker
 	name_label.add_theme_color_override("font_color", color)
-	portrait.set_speaker(speaker, color)
+	portrait.set_speaker(speaker, color, portrait_tex)
 	_pop_portrait()
 	text_label.text = str(line.get("text", ""))
 	total_chars = text_label.get_total_character_count()
@@ -128,6 +139,7 @@ func _advance_line() -> void:
 	char_timer = 0.0
 	pause_timer = 0.0
 	talk_time = 0.0
+	_blip_count = 0
 	continue_arrow.visible = false
 
 func _pop_portrait() -> void:
@@ -149,21 +161,25 @@ func _play_blip() -> void:
 	blip_player.pitch_scale = base + randf_range(-0.05, 0.05)
 	blip_player.play()
 
-# Blip procédural (pas d'asset audio requis) : ton bref, mi-sinus mi-carré
-# pour le grain "8 bits" caractéristique, enveloppe en decay linéaire.
+# Blip procédural (pas d'asset audio requis) : ton bref et doux, quasi
+# sinusoïdal (un soupçon de 2e harmonique pour le grain, pas de carré —
+# trop dur/nasillard à ce volume), attaque courte pour éviter le clic et
+# decay exponentiel (plus naturel qu'une rampe linéaire).
 func _make_blip_wav() -> AudioStreamWAV:
 	var mix_rate := 22050
-	var duration := 0.045
+	var duration := 0.03
 	var n := int(mix_rate * duration)
+	var attack_n := maxi(1, int(n * 0.12))
 	var bytes := PackedByteArray()
 	bytes.resize(n * 2)
-	var freq := 400.0
+	var freq := 340.0
 	for i in n:
 		var t := float(i) / mix_rate
-		var env := 1.0 - float(i) / float(n)
-		var s := sin(TAU * freq * t)
-		s = s * 0.6 + sign(s) * 0.4
-		var v := int(clamp(s * env, -1.0, 1.0) * 32767.0)
+		var decay := exp(-7.0 * float(i) / n)
+		var attack := minf(1.0, float(i) / attack_n)
+		var env := decay * attack
+		var s := sin(TAU * freq * t) + 0.12 * sin(TAU * freq * 2.0 * t)
+		var v := int(clampf(s * env * 0.8, -1.0, 1.0) * 32767.0)
 		bytes.encode_s16(i * 2, v)
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS

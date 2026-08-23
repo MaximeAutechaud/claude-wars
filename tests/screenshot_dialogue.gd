@@ -17,7 +17,7 @@ func _ready() -> void:
 	var box: DialogueBox = (load("res://scenes/dialogue_box.tscn") as PackedScene).instantiate()
 	add_child(box)
 	box.play([
-		{"speaker": "Le Fossoyeur", "text": "Tu me cherchais, petit Chroniqueur ? Voilà une erreur que tu ne referas pas deux fois."},
+		{"speaker": "Le Héros", "text": "Voilà donc le fameux Fossoyeur... Je ne pensais pas te trouver si vite."},
 	])
 	await get_tree().create_timer(1.0).timeout   # laisse le typewriter avancer et le portrait bumper
 	get_viewport().get_texture().get_image().save_png(out)

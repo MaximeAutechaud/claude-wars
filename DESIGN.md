@@ -466,3 +466,12 @@ sur l'écran d'accueil → `scenes/dialogue_demo.tscn` (texte et noms de
 personnages provisoires). À intégrer plus tard aux scènes de campagne
 (cutscenes d'ouverture d'acte, dialogues de boss) une fois les personnages
 et leur écriture stabilisés côté `cendrelune_compte_rendu.md`.
+**Premier vrai portrait (23/08/2026)** : `assets/portraits/heros.png`
+(illustration détourée fournie par Maxime) remplace la silhouette
+placeholder pour "Le Héros" — table `scripts/portraits.gd`
+(`Portraits.BY_SPEAKER`, nom du locuteur → texture) consultée par
+`dialogue_box.gd` à chaque ligne, une ligne peut aussi forcer un portrait
+via la clé `"portrait"`. `DialoguePortrait` bascule automatiquement entre
+artwork et silhouette de secours selon qu'une entrée existe ou non pour le
+locuteur ; le tremblement de parole et le pop d'apparition s'appliquent aux
+deux de la même façon.

@@ -1,10 +1,13 @@
 class_name DialoguePortrait
 extends Control
 
-# Portrait placeholder façon buste : tant qu'il n'y a pas de vrai artwork par
-# personnage, on dessine une silhouette (tête + épaules) teintée de la
+# Portrait du locuteur : un artwork détouré (Portraits.BY_SPEAKER) quand il
+# existe, sinon une silhouette de secours (tête + épaules) teintée de la
 # couleur du locuteur, avec son initiale. `bob_offset` est piloté par
-# DialogueBox pendant qu'un personnage "parle" (léger tremblement vertical).
+# DialogueBox pendant qu'un personnage "parle" (léger tremblement vertical) —
+# appliqué à l'artwork comme à la silhouette.
+
+@onready var texture_rect: TextureRect = $TextureRect
 
 var accent: Color = Color(0.55, 0.58, 0.65)
 var initial: String = "?"
@@ -13,9 +16,11 @@ var bob_offset: float = 0.0
 func _ready() -> void:
 	resized.connect(queue_redraw)
 
-func set_speaker(speaker_name: String, color: Color) -> void:
+func set_speaker(speaker_name: String, color: Color, portrait: Texture2D = null) -> void:
 	accent = color
 	initial = _pick_initial(speaker_name)
+	texture_rect.texture = portrait
+	texture_rect.visible = portrait != null
 	queue_redraw()
 
 # Ignore l'article initial ("Le Fossoyeur" -> F, pas L) : les noms de
@@ -35,9 +40,14 @@ func _draw() -> void:
 	var s := size
 	if s.x <= 0.0 or s.y <= 0.0:
 		return
+	texture_rect.position.y = bob_offset
+
 	var cx := s.x * 0.5
 	draw_rect(Rect2(Vector2.ZERO, s), Color(0.1, 0.11, 0.14, 0.92), true)
 	draw_rect(Rect2(Vector2.ZERO, s), accent, false, 3.0)
+
+	if texture_rect.visible:
+		return
 
 	var head_r := s.x * 0.22
 	var head_c := Vector2(cx, s.y * 0.32 + bob_offset)
