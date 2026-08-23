@@ -452,26 +452,31 @@ Rivière (aucun art dédié — le chemin continue simplement par-dessus le
 `Roads` ne regarde que les voisins de même terrain.
 
 **Rivière (23/08/2026) : même technique, ruban bien plus large.**
-`scripts/rivers.gd` (nœud `Rivers`, entre `GameMap` et `Roads`) est un
-quasi-duplicata de `Roads` — même algorithme centre-vers-milieu-d'arête,
-`assets/tiles/river.png` comme échantillon de matière — mais
-`RIBBON_HALF_WIDTH` à 23 (contre 9 pour la route) puisque la rivière doit
-occuper quasiment tout l'hexagone, avec juste un peu de berge (l'herbe de
-`plains.png`, réutilisée aussi comme base de `Terrain.RIVER`) visible aux
-coins. Duplication de code assumée pour l'instant (deux fichiers de ~85
-lignes quasi identiques) plutôt qu'une classe de base partagée — à
-factoriser si un troisième terrain « ruban connecté » apparaît un jour.
-Le brouillard (`fog.gd`) et `tests/screenshot_full.gd` ont été mis à jour
-pour aussi rappeler `rivers.queue_redraw()`, même piège que pour `Roads`.
+`scripts/rivers.gd` (nœud `Rivers`, entre `GameMap` et `Roads`) — voir
+ci-dessous, `RIBBON_HALF_WIDTH` à 23 contre 9 pour la route puisqu'elle
+doit occuper quasiment tout l'hexagone, avec juste un peu de berge (l'herbe
+de `plains.png`, réutilisée aussi comme base de `Terrain.RIVER`) visible
+aux coins. Le brouillard (`fog.gd`) et `tests/screenshot_full.gd` ont été
+mis à jour pour aussi rappeler `rivers.queue_redraw()`, même piège que pour
+`Roads`.
 
-Vigilance connue : le ruban zigzague visiblement sur un tracé pourtant
-rectiligne (route est-ouest de « La Marche du Bord ») — artefact
-géométrique correct mais pas très élégant du décalage vertical des
-colonnes impaires (odd-q) : les centres d'hexagones d'une même "ligne
-droite" ne sont pas alignés à l'écran. Piste retenue pour lisser ça :
-remplacer les segments droits centre→milieu-d'arête par une courbe
-(Catmull-Rom via `Curve2D`) passant par les centres successifs, à traiter
-pour Roads et Rivers en même temps puisqu'elles partagent l'algorithme.
+**Lissage du ruban (23/08/2026).** Le premier jet (segments droits
+centre → milieu d'arête) zigzaguait visiblement sur un tracé pourtant
+rectiligne — artefact géométrique correct mais pas élégant du décalage
+vertical des colonnes impaires (odd-q) : les centres d'une même "ligne
+droite" ne sont pas alignés à l'écran. `Roads` et `Rivers` sont devenues
+de fines sous-classes de `scripts/connected_ribbon.gd` (`ConnectedRibbon`,
+ne fixe que `terrain_type`/`ribbon_half_width`/`ribbon_tex` dans `_init()`)
+qui porte l'algorithme commun, maintenant lissé : chaque segment
+centre-à-centre est une courbe de Bézier cubique, la tangente en chaque
+case venant de ses propres voisines connectées façon Catmull-Rom (case de
+passage à 2 connexions : tangente selon l'axe voisin1→voisin2, lisse la
+ligne qui la traverse ; case terminale à 1 connexion : tangente vers son
+unique voisine ; embranchement à 3+ connexions ou case isolée : pas de
+lissage, spokes droits depuis le centre — se lit bien comme un carrefour).
+Passage à une classe de base partagée à cette occasion (la duplication
+`Roads`/`Rivers` était déjà notée comme provisoire, et le lissage aurait
+dû être écrit deux fois sinon).
 
 **Piège lié : `Roads`/`Rivers`/`Villages` doivent se redessiner quand le brouillard
 change.** `Fog.recompute()` (appelé à chaque déplacement/spawn/mort) est le
