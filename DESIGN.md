@@ -380,7 +380,32 @@ tableau actuel : « La Marche du Bord », 22×16), 5 terrains
 (coûts de mouvement par type d'unité, bonus de défense), 3 types d'unités avec
 portée et riposte conditionnelle (+ le type `BOSS` pour les boss de camp), IA
 qui garde ses distances avec les unités à
-portée, sprites SVG maison teintés par équipe, animation d'idle 2 frames.
+portée, sprites SVG teintés par équipe, animation d'idle 2 frames.
+
+**Rework visuel du roster (23/08/2026).** Les 8 sprites d'`assets/units/`
+sont passés du style géométrique minimal (phase 2) à un style chibi détaillé,
+vectorisé à partir de références PNG générées par IA (fournies par Maxime)
+via Inkscape (`object-trace`, pipeline : downscale 450px → trace 8 passes de
+couleur → simplification → suppression de l'image bitmap source laissée par
+Inkscape dans le SVG exporté — un piège à connaître si on retrace un jour un
+sprite : le fond blanc opaque qui en résulte n'est visible qu'une fois la
+texture réimportée par Godot, pas dans un aperçu Inkscape isolé). La
+convention de couleur d'équipe (zone dessinée en magenta, palette-swap par
+`team_color.gdshader`) est conservée : chaque référence a été générée avec
+l'élément de faction (bouclier, cape, caparaçon, sash…) déjà peint dans cette
+teinte. La 2e frame d'idle (`<type>_2.svg`) reprend le principe de l'ancien style
+(le corps « s'enfonce » d'un souffle, façon respiration) : plutôt que de
+redessiner une pose (les tracés Inkscape sont un seul bloc par couleur, pas
+décomposés en membres comme les anciens SVG faits main), un unique
+`transform="translate(…) scale(1,0.965)"` sur le groupe racine compresse
+tout le sprite de 3,5 % verticalement, ancré au bas du viewBox — les pieds
+restent au sol, la tête descend légèrement. Généré par script
+(`make_idle_frame2.py`, non versionné — la logique tient en quelques lignes
+de regex sur le `<g id="g2">`). Après un remplacement de SVG hors éditeur, un reimport forcé est
+nécessaire : `godot --headless --editor --quit --path .` (le lancement en
+mode jeu simple sert les textures depuis le cache `.godot/imported/` sans
+détecter les fichiers sources changés).
+
 Caméra libre (flèches/WASD physique, zoom molette, clamp aux limites de la
 carte). Fiche d'unité (`UnitPanel` dans main.tscn, `main._show_unit_panel`) :
 portrait teinté équipe, nom, PV, stats (attaque/riposte/portée/PM/vision/
