@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1f5dbs3ky1wr"
-path="res://.godot/imported/village.svg-6274b1ac6d03d57460d6c593a4a754e2.ctex"
+uid="uid://bvppd2p3ihnbe"
+path="res://.godot/imported/village.png-8e7881114d58bb48a6e18568e3014e8b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tiles/village.svg"
-dest_files=["res://.godot/imported/village.svg-6274b1ac6d03d57460d6c593a4a754e2.ctex"]
+source_file="res://assets/tiles/village.png"
+dest_files=["res://.godot/imported/village.png-8e7881114d58bb48a6e18568e3014e8b.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

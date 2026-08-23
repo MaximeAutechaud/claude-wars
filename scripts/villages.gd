@@ -8,7 +8,7 @@ const VILLAGE_HEAL := 3
 @onready var fog: Fog = get_node_or_null("../Fog")
 
 var owners: Dictionary = {}
-var _tex: Texture2D = preload("res://assets/tiles/village.svg")
+var _tex: Texture2D = preload("res://assets/tiles/village.png")
 
 func _ready() -> void:
 	# cell -> propriétaire initial (-1 = neutre), depuis le scénario courant
@@ -38,12 +38,12 @@ func _draw() -> void:
 		if fog and not fog.is_explored(cell):
 			continue
 		var p := to_local(map.to_global(map.map_to_local(cell)))
-		draw_texture(_tex, p - Vector2(16.0, 22.0))
+		draw_texture(_tex, p - Vector2(50.0, 60.0))
 		# Fanion à la couleur du propriétaire (gris = neutre)
 		var col := Color(0.62, 0.62, 0.62)
 		if owners[cell] >= 0:
 			col = Unit.TEAM_COLORS[owners[cell]]
-		draw_line(p + Vector2(9, -22), p + Vector2(9, -7), Color(0.32, 0.26, 0.2), 1.5)
+		draw_line(p + Vector2(36, -60), p + Vector2(36, -40), Color(0.32, 0.26, 0.2), 1.5)
 		draw_colored_polygon(PackedVector2Array([
-			p + Vector2(9, -22), p + Vector2(18, -18.5), p + Vector2(9, -15),
+			p + Vector2(36, -60), p + Vector2(48, -55), p + Vector2(36, -50),
 		]), col)

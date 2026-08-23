@@ -22,9 +22,9 @@ const TERRAIN_DEFENSE: Dictionary = {
 }
 
 const TERRAIN_TEXTURE: Dictionary = {
-	Terrain.PLAINS:   preload("res://assets/tiles/plains.svg"),
-	Terrain.FOREST:   preload("res://assets/tiles/forest.svg"),
-	Terrain.MOUNTAIN: preload("res://assets/tiles/mountain.svg"),
+	Terrain.PLAINS:   preload("res://assets/tiles/plains.png"),
+	Terrain.FOREST:   preload("res://assets/tiles/forest.png"),
+	Terrain.MOUNTAIN: preload("res://assets/tiles/mountain.png"),
 	Terrain.ROAD:     preload("res://assets/tiles/road.svg"),
 	Terrain.RIVER:    preload("res://assets/tiles/river.svg"),
 }
@@ -44,10 +44,21 @@ func _build_tileset() -> void:
 	ts.tile_offset_axis = TileSet.TILE_OFFSET_AXIS_VERTICAL
 	ts.tile_size = Vector2i(TILE_W, TILE_H)
 
-	# Une source par terrain : source_id = valeur de l'enum Terrain
+	# Une source par terrain : source_id = valeur de l'enum Terrain.
+	#
+	# Piège vécu : la région source DOIT valoir TILE_W×TILE_H pour toutes les
+	# sources. Un TileSet hexagonal avec des sources de texture_region_size
+	# hétérogènes (ex. une source fournie en haute résolution pour rester
+	# nette au zoom, les autres à la taille native) rend cassé : toutes les
+	# sources sauf la première deviennent invisibles (remplacées par
+	# l'apparence de la première), qu'elles soient SVG ou PNG — confirmé par
+	# élimination sur Godot 4.7.1. Donc : toujours fournir les textures de
+	# terrain déjà à la taille finale de la case (voir assets/tiles/*.png,
+	# exportées à 64×56 depuis leurs sources haute résolution).
 	for t: int in Terrain.values():
 		var source := TileSetAtlasSource.new()
-		source.texture = TERRAIN_TEXTURE[t]
+		var tex: Texture2D = TERRAIN_TEXTURE[t]
+		source.texture = tex
 		source.texture_region_size = Vector2i(TILE_W, TILE_H)
 		source.create_tile(Vector2i.ZERO)
 		ts.add_source(source, t)

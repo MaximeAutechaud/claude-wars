@@ -406,6 +406,38 @@ nécessaire : `godot --headless --editor --quit --path .` (le lancement en
 mode jeu simple sert les textures depuis le cache `.godot/imported/` sans
 détecter les fichiers sources changés).
 
+**Rework visuel de la carte (23/08/2026, en cours).** Même principe que le
+roster : terrains repeints à partir de références PNG générées par IA
+(`plains.png`, `forest.png`, `mountain.png` faits ; route/rivière restent
+l'ancien style en attendant leurs références — plus complexes à traiter
+puisqu'elles doivent se raccorder à leurs voisines selon la direction,
+contrairement à forêt/montagne qui sont de simples props posés sur une
+base). Contrairement aux unités, ce sont des
+textures **raster** (pas de vectorisation — le dégradé peint est le but,
+pas des aplats nets) : découpe hexagonale précise via un `clipPath` SVG
+généré à la volée (Inkscape, `xlink:href` vers le PNG source, polygone aux
+sommets de `GameMap.hex_corners`), export au format final. Forêt = un
+recadrage de la texture de plaine + un overlay d'arbres (fond transparent)
+composité par-dessus avant le découpage hexagonal — le principe « props sur
+une base » retenu pour éviter de repeindre un terrain entier par variante.
+Village : icône simple (une des 3 chaumières de la référence, détourée et
+réduite), toujours dessinée à part par `villages.gd` (pas une source de
+TileSet) — fonctionne sans piège particulier.
+
+**Piège important, `TileSetAtlasSource.texture_region_size`** : toutes les
+sources d'un même `TileSet` hexagonal doivent utiliser la **même** région
+que `tile_size` (ici 64×56). Fournir une texture en haute résolution pour
+rester nette au zoom (ex. 512×448 pour une case 64×56, avec
+`texture_region_size = tex.get_size()`) casse le rendu dès qu'il y a une
+**deuxième** source dans le `TileSet` : toutes les sources sauf la première
+ajoutée deviennent invisibles (remplacées visuellement par l'apparence de
+la première), qu'elles soient SVG ou PNG, peu importe leur propre taille —
+confirmé par élimination sur Godot 4.7.1 (`use_texture_padding=false` ne
+change rien). Donc : toujours exporter les textures de terrain déjà à
+TILE_W×TILE_H avant de les fournir à `game_map.gd` — la finesse du
+découpage hexagonal en amont (recadrage haute résolution puis réduction)
+compense largement la perte de netteté au zoom.
+
 Caméra libre (flèches/WASD physique, zoom molette, clamp aux limites de la
 carte). Fiche d'unité (`UnitPanel` dans main.tscn, `main._show_unit_panel`) :
 portrait teinté équipe, nom, PV, stats (attaque/riposte/portée/PM/vision/

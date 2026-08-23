@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://t7hqqvqn563n"
-path="res://.godot/imported/mountain.svg-0bc29b1c6b715e6c0e968adf43ffc928.ctex"
+uid="uid://sp1gm3grv45s"
+path="res://.godot/imported/mountain.png-62999768e8ea3572d60b71892dc47b20.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tiles/mountain.svg"
-dest_files=["res://.godot/imported/mountain.svg-0bc29b1c6b715e6c0e968adf43ffc928.ctex"]
+source_file="res://assets/tiles/mountain.png"
+dest_files=["res://.godot/imported/mountain.png-62999768e8ea3572d60b71892dc47b20.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false
