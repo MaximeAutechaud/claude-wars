@@ -257,9 +257,154 @@ Enseignements :
 	  compétence de classe — compétence fixe, pas de choix entre deux : le
 	  choix au level-up reste la signature du héros. L'XP du héros (niveaux,
 	  gains d'équipe) ne change pas.
+	  *(Amendé le 23/08/2026 par la décision 17 : la vétérance devient un
+	  choix de spécialisation entre 3 sous-classes nommées, pas une
+	  compétence fixe — le « pas de choix » ci-dessus ne tient plus.)*
 	- Garde-fou playtest : si les compétences actives (Provocation, Entrave)
 	  alourdissent la manipulation, les passer en passif automatique — le
 	  déterminisme le permet sans rien casser.
+
+17. **Spécialisation des unités à la promotion** (23/08/2026, remplace la
+	partie « compétence fixe » de la décision 16 — en cours de conception,
+	classe par classe). Point de départ : on m'a suggéré d'ajouter du hasard
+	(critiques, esquives) pour casser le côté trop prévisible du combat
+	déterministe. Refusé — la décision 8 (déterminisme) et tout l'outillage
+	de survie de la décision 14 (prévision de dégâts, « chaque mort est une
+	erreur de lecture évitable ») en dépendent directement. La profondeur
+	supplémentaire vient plutôt du **choix**, pas de l'aléatoire.
+	- **Rejeté en cours de route : les bonus de terrain par classe** (ex.
+	  « l'Archer gagne en portée sur une montagne »). Problème identifié :
+	  un bonus fixe unité×terrain converge toujours vers une seule
+	  composition optimale que tout joueur rationnel reproduit (« toujours
+	  mettre les archers en hauteur ») — l'inverse de l'objectif. Principe
+	  retenu à la place : la spécialisation est un choix **ponctuel par
+	  instance d'unité**, pas une règle de placement à exploiter
+	  systématiquement à chaque partie.
+	- **Mécanique retenue** : le système de niveaux existant (actuellement
+	  réservé au héros) s'étend à toutes les unités hors héros/boss.
+	  Niveau 1 (base) → Niveau 2 → Niveau 3, chaque palier un petit gain de
+	  stats, sur l'économie d'XP partagée déjà définie en décision 16
+	  (kill : +1 XP aux alliés à ≤3 cases, +1 bonus au tueur ; +1 XP de
+	  survie en fin de tableau). Seuils exacts à caler au playtest (piste :
+	  2 / 5 XP cumulés). Au **prochain gain d'XP après le niveau 3** — pas
+	  de niveau 4 classique — la **promotion** se propose : un choix parmi
+	  3 sous-classes nommées, irréversible. Elle renomme l'unité, ajuste ses
+	  stats et débloque la mécanique de la branche choisie. Roster final
+	  visé : 18 unités jouables (6 classes de base × 3 spécialisations).
+	  Cohérent avec la rareté/permadeath déjà en place (décision 16) :
+	  chaque unité qui survit jusque-là devient une build unique à laquelle
+	  le joueur tient, pas un numéro de série.
+	- **Éclaireur — verrouillé :**
+	  - *Ombre* : conserve les traits de scout (vision 5, PM 4, coût 1
+		partout sauf rivière). Infiltration (décision 16 : ne réveille plus
+		les camps) + indétectable au-delà de 2 cases. La reconnaissance par
+		la discrétion — on ne la voit jamais venir.
+	  - *Survivaliste* : conserve les traits de scout. Bonus combat quand
+		aucun allié n'est à proximité — la reconnaissance par l'élimination
+		des menaces (typiquement d'autres scouts, isolés par nature — pas de
+		règle spéciale « anti-scout » codée en dur, le bonus d'isolement
+		suffit à créer ce rôle naturellement).
+	  - *Assassin* : perd les traits de scout, stats vers un profil combat à
+		part entière. Bonus dégâts contre une cible déjà blessée
+		(finisseur). Abandonne la reconnaissance pour devenir un vrai
+		combattant.
+	  - Idée écartée en cours de route : un bonus de dissimulation en forêt
+		spécifique à cette classe — retenu comme un futur effet de
+		**terrain universel** (profite à n'importe quelle unité), pas une
+		mécanique de spécialisation.
+	- **Guerrier — verrouillé :**
+	  - *Rempart* : Provocation (force les ennemis adjacents à le cibler) +
+		PV drastiquement augmentés. L'éponge à dégâts pure.
+	  - *Vengeur* : Provocation aussi — sans elle un adversaire contourne
+		simplement le Guerrier et la riposte à distance ne sert jamais — +
+		riposte même contre une attaque à distance (hors de sa propre
+		portée, cas normalement impossible). PV plus proches de la
+		normale : la dissuasion vient de la punition, pas de l'encaissement
+		brut.
+	  - *Berserker* : pas de Provocation (jeu proactif, pas défensif).
+		Attaque deux fois d'affilée. Chiffres exacts (dégâts pleins ou
+		réduits par coup, contrepartie sur l'atk de base) à trancher au
+		playtest.
+	  - Idée écartée en cours de route : *Gardien des cols*, un bonus de
+		défense en terrain difficile (montagne/forêt) — retiré pour la même
+		raison que le bonus forêt de l'Éclaireur ci-dessus (trop
+		situationnel/dirigiste comparé à une identité qui vaut partout).
+	- **Cavalier — validé provisoirement (Maxime pas totalement convaincu,
+	  faute de mieux pour l'instant — à revisiter si une meilleure idée
+	  surgit) :**
+	  - *Percée* (branche A, déjà conçue en décision 16) : frappe et
+		s'enfuit — après un kill, dépense les PM restants.
+	  - *Sagittaire* : portée 2 (comme l'Archer), riposte en mêlée
+		réduite/nulle — harcèlement à distance permanent, ne rentre jamais
+		au contact volontairement (contraste avec Percée qui, lui, engage
+		la mêlée puis se replie).
+	  - *Cataphracte* : ignore les zones de contrôle + PV modérément
+		augmentés (nettement moins que Rempart). Un bélier increvable **en
+		mouvement** plutôt qu'un mur statique — volontairement différent
+		des outils du Guerrier (pas de Provocation, pas de riposte
+		améliorée), pour ne pas dupliquer son identité de tank.
+	- **Archer — verrouillé :**
+	  - *Rôdeur* (branche A, déjà conçue en décision 16) : Flèche
+		d'entrave — la cible touchée tombe à 1 PM au tour suivant. Contrôle.
+		Une variante « pose de piège » (objet persistant sur la carte) a
+		été évoquée puis mise de côté — mécanisme neuf, plus gros qu'un
+		simple debuff au contact, extension possible plus tard.
+	  - *Tireur d'élite* : +1 portée permanente (portée 3). Snipe en
+		sécurité, jamais au contact.
+	  - *Arbalétrier* : portée 1 (perd le coussin de portée de l'Archer de
+		base) mais reste jamais contré à l'attaque, comme les autres
+		archers (nouveau flag générique dans l'esprit du `pierce` du
+		Mage — comparaison donnée : la Gatling de Civilization V, portée 1
+		mais toujours classée arme à distance). Dégâts nettement
+		supérieurs aux deux autres branches. L'exposition compensée par ce
+		bonus ne vient pas d'un risque de riposte sur ses propres
+		attaques — il n'en subit jamais — mais du fait d'être au contact,
+		donc vulnérable à être attaqué en premier par n'importe quel
+		ennemi adjacent sur son propre tour (ZoC compris), alors que les
+		deux autres branches restent à distance de sécurité.
+	- **Apothicaire — verrouillé :**
+	  - *Guérisseur* (branche A, déjà conçue en décision 16) : Guérison —
+		soin 5 + dissipe les malédictions (marques de boss et états à
+		venir).
+	  - *Médecin de guerre* : le soin devient une action gratuite (ne
+		consomme pas le tour) — peut soigner et encore se replacer ou
+		attaquer. Moins de soin brut que Guérisseur, mais jamais obligée de
+		choisir entre soigner et fuir.
+	  - *Alchimiste* : abandonne complètement le soin. Lance une fiole sur
+		une case (portée 3, même structure que la Boule de feu du héros —
+		cible une case à distance, pas un effet centré sur elle puisqu'elle
+		n'a pas vocation à être en première ligne) : rayon 2 à l'impact,
+		buff atk/déf aux alliés dans la zone, debuff aux ennemis. Le
+		support ultime — compense l'absence de soin (très pénalisant dans
+		un jeu à permadeath) par un vrai basculement de mêlée à distance.
+	- **Mage des braises — verrouillé.** Le verbe de classe (perce-défense)
+	  reste sur les trois branches ; ce qui change est l'axe secondaire :
+	  - *Pyromant* (branche A, déjà conçue en décision 16) : Terre brûlée
+		— la case ciblée s'enflamme, 2 dégâts à quiconque y termine son
+		tour.
+	  - *Foudroyeur* : bonus de dégâts contre une cible pas encore touchée
+		ce tour — l'alpha strike qui abat la priorité avant qu'elle
+		n'agisse. Inverse de l'Assassin de l'Éclaireur (qui achève les
+		cibles déjà blessées) : ici on ouvre le combat fort.
+	  - *Glaciomant* : crée un mur de glace **persistant** (façon mur
+		d'Anivia — pas un simple debuff ponctuel), infranchissable pour
+		les deux camps pendant 2 tours (comme une rivière tant qu'il tient),
+		et immobilise les unités déjà présentes dans la zone au moment du
+		lancer. Contrôle de zone pur, pas de dégâts — coupe une ligne,
+		protège un flanc ou une retraite. Techniquement : réutilise le
+		principe des cases marquées persistantes déjà employé par le
+		Fossoyeur (`doom_cells`). Dimension exacte de la zone non tranchée
+		(secondaire, à ajuster au playtest comme la durée) ; 2 tours de
+		fonte retenus comme point de départ — reconnu comme potentiellement
+		très fort, à surveiller en premier au playtest.
+	- **Les 18 unités du roster final sont maintenant toutes définies sur
+	  le papier** (6 classes de base × 3 spécialisations). Rien n'est
+	  encore implémenté — reste à chiffrer précisément les seuils de
+	  niveau/promotion et tous les bonus numériques, puis construire une
+	  tranche verticale (mécanique + UI de choix + renommage) avant
+	  d'industrialiser les 18.
+	- Décision 16 reste la référence pour les stats de base par classe et
+	  pour Héros/Boss (aucun changement, ils n'ont pas de spécialisation).
 
 ## Feuille de route
 
@@ -368,8 +513,10 @@ Chaque phase doit laisser un jeu jouable.
 	  logique instantanée / sprite qui rattrape (`Unit.walk_along`,
 	  `wait_walks` pour séquencer IA et creeps)
 - [ ] **Phase 12b** — XP de vétérance partagée (rayon 3, +1 au tueur, +1 de
-	  survie en fin de tableau, promotion à 5 XP) et les six compétences de
-	  vétéran (décision 16)
+	  survie en fin de tableau) étendue en système de niveaux 1→3 puis
+	  promotion à 3 spécialisations nommées par classe (décision 17,
+	  conception en cours — remplace le plan initial de compétence fixe de
+	  la décision 16)
 
 ## État technique actuel (rappel)
 
@@ -477,6 +624,14 @@ lissage, spokes droits depuis le centre — se lit bien comme un carrefour).
 Passage à une classe de base partagée à cette occasion (la duplication
 `Roads`/`Rivers` était déjà notée comme provisoire, et le lissage aurait
 dû être écrit deux fois sinon).
+
+**Lissage retiré de la rivière (23/08/2026, même jour).** La courbe, très
+flatteuse sur le filet étroit de la route, fait onduler le ruban large de
+la rivière comme de l'eau agitée plutôt que de couler — l'effet inverse de
+ce qui est cherché. `ConnectedRibbon` expose `smooth_curve: bool = true`
+(les points de contrôle de la Bézier collapsent sur les extrémités quand
+`false`, donnant des segments droits centre-à-centre sans code séparé) ;
+`Rivers._init()` le met à `false`, `Roads` garde le défaut.
 
 **Piège lié : `Roads`/`Rivers`/`Villages` doivent se redessiner quand le brouillard
 change.** `Fog.recompute()` (appelé à chaque déplacement/spawn/mort) est le
