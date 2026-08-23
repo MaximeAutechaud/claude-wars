@@ -425,3 +425,19 @@ Prochaine brique : la campagne (phase 11 : enchaînement de tableaux,
 persistance des héros/vétérans entre tableaux) ; équilibrage en attente —
 réduire les prisonniers des camps (chaque perte doit faire mal, distiller
 les unités anonymes).
+
+**Outil narratif — boîte de dialogue (premier jet, non rattaché à une phase).**
+Système générique façon Phoenix Wright (`scripts/dialogue_box.gd` +
+`scenes/dialogue_box.tscn`) : portrait qui « parle » (bump vertical pendant
+la révélation du texte), texte en typewriter avec blip sonore **procédural**
+(`AudioStreamWAV` synthétisé en mémoire, pitché par locuteur — aucun asset
+audio requis), boîte de nom, pause plus longue sur la ponctuation, flèche
+« continuer », avance au clic/Entrée/Espace/Z. `DialogueBox.play(lines)`
+prend un script de dialogue en données (`[{"speaker", "text", "color"?}]`),
+zéro contenu narratif en dur dans le système. Portraits en silhouette
+générée (`dialogue_portrait.gd`, `_draw`) : placeholder assumé en attendant
+un vrai artwork par personnage. Démo jouable : bouton « Dialogue (test) »
+sur l'écran d'accueil → `scenes/dialogue_demo.tscn` (texte et noms de
+personnages provisoires). À intégrer plus tard aux scènes de campagne
+(cutscenes d'ouverture d'acte, dialogues de boss) une fois les personnages
+et leur écriture stabilisés côté `cendrelune_compte_rendu.md`.

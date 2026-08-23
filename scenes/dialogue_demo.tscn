@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/dialogue_demo.gd" id="1_demo"]
+[ext_resource type="PackedScene" path="res://scenes/dialogue_box.tscn" id="2_box"]
+
+[node name="DialogueDemo" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_demo")
+
+[node name="Background" type="ColorRect" parent="."]
+show_behind_parent = true
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.08, 0.1, 1)
+
+[node name="DialogueBox" parent="." instance=ExtResource("2_box")]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0

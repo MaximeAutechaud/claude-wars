@@ -44,6 +44,11 @@ func _on_test_map_pressed() -> void:
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
+# Démo de la boîte de dialogue façon Phoenix Wright (premier jet, texte et
+# portraits placeholder) — pour playtester le feel indépendamment d'un tableau
+func _on_dialogue_test_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/dialogue_demo.tscn")
+
 # Fond : la trame hexagonale du jeu, en filigrane sur le fond sombre
 func _draw() -> void:
 	var size := get_viewport_rect().size

@@ -1,0 +1,96 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/dialogue_box.gd" id="1_box"]
+[ext_resource type="Script" path="res://scripts/dialogue_portrait.gd" id="2_portrait"]
+
+[node name="DialogueBox" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_box")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="Portrait" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.33
+anchor_top = 0.08
+anchor_right = 0.67
+anchor_bottom = 0.74
+mouse_filter = 2
+script = ExtResource("2_portrait")
+
+[node name="NameTag" type="Panel" parent="."]
+layout_mode = 1
+anchor_left = 0.05
+anchor_top = 0.655
+anchor_right = 0.32
+anchor_bottom = 0.715
+mouse_filter = 2
+
+[node name="NameMargin" type="MarginContainer" parent="NameTag"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="NameLabel" type="Label" parent="NameTag/NameMargin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+text = "???"
+
+[node name="TextPanel" type="Panel" parent="."]
+layout_mode = 1
+anchor_left = 0.05
+anchor_top = 0.72
+anchor_right = 0.95
+anchor_bottom = 0.95
+mouse_filter = 2
+
+[node name="TextMargin" type="MarginContainer" parent="TextPanel"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="TextLabel" type="RichTextLabel" parent="TextPanel/TextMargin"]
+layout_mode = 2
+mouse_filter = 2
+bbcode_enabled = false
+scroll_active = false
+visible_characters_behavior = 0
+theme_override_font_sizes/normal_font_size = 20
+theme_override_colors/default_color = Color(0.95, 0.96, 1, 1)
+
+[node name="ContinueArrow" type="Label" parent="TextPanel"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -34.0
+offset_top = -30.0
+offset_right = -10.0
+offset_bottom = -6.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.82, 0.15, 1)
+text = "▼"
+horizontal_alignment = 1
+
+[node name="Blip" type="AudioStreamPlayer" parent="."]
