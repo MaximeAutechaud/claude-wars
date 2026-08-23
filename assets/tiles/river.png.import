@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vs0tf56lluwp"
-path="res://.godot/imported/river.svg-a6e9dfb0a9e5d3705c38a6a17df6afa2.ctex"
+uid="uid://bbkb2persk1nm"
+path="res://.godot/imported/river.png-abecc4e8d01a0189140a6b2cc053d5d1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tiles/river.svg"
-dest_files=["res://.godot/imported/river.svg-a6e9dfb0a9e5d3705c38a6a17df6afa2.ctex"]
+source_file="res://assets/tiles/river.png"
+dest_files=["res://.godot/imported/river.png-abecc4e8d01a0189140a6b2cc053d5d1.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

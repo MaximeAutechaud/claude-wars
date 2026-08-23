@@ -5,6 +5,8 @@
 [ext_resource type="Script" uid="uid://d3hv241rb7qxe" path="res://scripts/units_layer.gd" id="3_ulayer"]
 [ext_resource type="Script" uid="uid://c4v0gpsvkyehu" path="res://scripts/cursor.gd" id="4_cursor"]
 [ext_resource type="Script" path="res://scripts/villages.gd" id="5_villages"]
+[ext_resource type="Script" path="res://scripts/roads.gd" id="8_roads"]
+[ext_resource type="Script" path="res://scripts/rivers.gd" id="9_rivers"]
 [ext_resource type="Script" path="res://scripts/creeps.gd" id="6_creeps"]
 [ext_resource type="Script" path="res://scripts/fog.gd" id="7_fog"]
 
@@ -16,6 +18,12 @@ script = ExtResource("1_main")
 [node name="GameMap" type="TileMapLayer" parent="." unique_id=343510386]
 y_sort_enabled = true
 script = ExtResource("2_gmap")
+
+[node name="Rivers" type="Node2D" parent="."]
+script = ExtResource("9_rivers")
+
+[node name="Roads" type="Node2D" parent="."]
+script = ExtResource("8_roads")
 
 [node name="Villages" type="Node2D" parent="."]
 script = ExtResource("5_villages")

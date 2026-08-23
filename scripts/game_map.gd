@@ -25,8 +25,14 @@ const TERRAIN_TEXTURE: Dictionary = {
 	Terrain.PLAINS:   preload("res://assets/tiles/plains.png"),
 	Terrain.FOREST:   preload("res://assets/tiles/forest.png"),
 	Terrain.MOUNTAIN: preload("res://assets/tiles/mountain.png"),
-	Terrain.ROAD:     preload("res://assets/tiles/road.svg"),
-	Terrain.RIVER:    preload("res://assets/tiles/river.svg"),
+	# La route n'a pas de texture de base propre : c'est de l'herbe, le
+	# chemin est peint par-dessus par Roads (ruban procédural connecté aux
+	# voisins — assets/tiles/road.png n'est qu'un échantillon de matière).
+	Terrain.ROAD:     preload("res://assets/tiles/plains.png"),
+	# Même principe que la route (voir Roads) : pas de texture de base
+	# propre, le ruban d'eau de Rivers est peint par-dessus — un peu de
+	# berge (l'herbe de la plaine) reste visible aux coins de la case.
+	Terrain.RIVER:    preload("res://assets/tiles/plains.png"),
 }
 
 # grid[col][row] = valeur Terrain — chargée depuis le scénario courant

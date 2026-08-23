@@ -408,11 +408,8 @@ détecter les fichiers sources changés).
 
 **Rework visuel de la carte (23/08/2026, en cours).** Même principe que le
 roster : terrains repeints à partir de références PNG générées par IA
-(`plains.png`, `forest.png`, `mountain.png` faits ; route/rivière restent
-l'ancien style en attendant leurs références — plus complexes à traiter
-puisqu'elles doivent se raccorder à leurs voisines selon la direction,
-contrairement à forêt/montagne qui sont de simples props posés sur une
-base). Contrairement aux unités, ce sont des
+(`plains.png`, `forest.png`, `mountain.png` faits ; rivière reste l'ancien
+style en attendant sa référence). Contrairement aux unités, ce sont des
 textures **raster** (pas de vectorisation — le dégradé peint est le but,
 pas des aplats nets) : découpe hexagonale précise via un `clipPath` SVG
 généré à la volée (Inkscape, `xlink:href` vers le PNG source, polygone aux
@@ -437,6 +434,57 @@ change rien). Donc : toujours exporter les textures de terrain déjà à
 TILE_W×TILE_H avant de les fournir à `game_map.gd` — la finesse du
 découpage hexagonal en amont (recadrage haute résolution puis réduction)
 compense largement la perte de netteté au zoom.
+
+**Route (23/08/2026) : matière plutôt que forme.** Pas de tuile par
+configuration de voisinage (tout droit/virage/embranchement) — un nouveau
+nœud `Roads` (`scripts/roads.gd`, entre `GameMap` et `Villages` dans
+`main.tscn`) dessine, pour chaque case Route, un ruban de la texture
+`assets/tiles/road.png` (simple échantillon de matière, pas une forme)
+depuis le centre de la case vers le milieu de chaque arête partagée avec
+une case Route voisine (`Pathfinder.get_neighbors`), plus un petit disque
+central pour raccorder les rubans. La forme du chemin (ligne, virage,
+carrefour) sort donc de la disposition réelle du scénario, sans art à
+multiplier par cas de figure. La case Route n'a pas de texture de base
+propre : elle réutilise `plains.png` dans `TERRAIN_TEXTURE`, le chemin
+peint par-dessus. Un pont n'est qu'une case Route qui coupe une rangée de
+Rivière (aucun art dédié — le chemin continue simplement par-dessus le
+"trou" dans la rivière) : fonctionne sans traitement spécial puisque
+`Roads` ne regarde que les voisins de même terrain.
+
+**Rivière (23/08/2026) : même technique, ruban bien plus large.**
+`scripts/rivers.gd` (nœud `Rivers`, entre `GameMap` et `Roads`) est un
+quasi-duplicata de `Roads` — même algorithme centre-vers-milieu-d'arête,
+`assets/tiles/river.png` comme échantillon de matière — mais
+`RIBBON_HALF_WIDTH` à 23 (contre 9 pour la route) puisque la rivière doit
+occuper quasiment tout l'hexagone, avec juste un peu de berge (l'herbe de
+`plains.png`, réutilisée aussi comme base de `Terrain.RIVER`) visible aux
+coins. Duplication de code assumée pour l'instant (deux fichiers de ~85
+lignes quasi identiques) plutôt qu'une classe de base partagée — à
+factoriser si un troisième terrain « ruban connecté » apparaît un jour.
+Le brouillard (`fog.gd`) et `tests/screenshot_full.gd` ont été mis à jour
+pour aussi rappeler `rivers.queue_redraw()`, même piège que pour `Roads`.
+
+Vigilance connue : le ruban zigzague visiblement sur un tracé pourtant
+rectiligne (route est-ouest de « La Marche du Bord ») — artefact
+géométrique correct mais pas très élégant du décalage vertical des
+colonnes impaires (odd-q) : les centres d'hexagones d'une même "ligne
+droite" ne sont pas alignés à l'écran. Piste retenue pour lisser ça :
+remplacer les segments droits centre→milieu-d'arête par une courbe
+(Catmull-Rom via `Curve2D`) passant par les centres successifs, à traiter
+pour Roads et Rivers en même temps puisqu'elles partagent l'algorithme.
+
+**Piège lié : `Roads`/`Rivers`/`Villages` doivent se redessiner quand le brouillard
+change.** `Fog.recompute()` (appelé à chaque déplacement/spawn/mort) est le
+seul déclencheur d'un nouveau `_draw()` pour ces couches — elles ne
+redessinent jamais seules. `Roads` a été oublié de la liste au premier jet
+(`fog.gd` ne rappelait que `villages.queue_redraw()` et
+`creeps.queue_redraw()`), ce qui rendait la route invisible dans toute
+case explorée après le tout premier calcul de brouillard (donc quasiment
+toute la carte, sauf la zone de départ) — silencieux, sans erreur, seule
+la capture plein-écran l'a révélé. Vérifier ce rappel à chaque nouvelle
+couche `_draw()`-only qui dépend du brouillard (et penser à
+`tests/screenshot_full.gd`, qui doit aussi la redessiner explicitement
+après avoir forcé le brouillard ouvert).
 
 Caméra libre (flèches/WASD physique, zoom molette, clamp aux limites de la
 carte). Fiche d'unité (`UnitPanel` dans main.tscn, `main._show_unit_panel`) :

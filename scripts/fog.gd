@@ -18,6 +18,8 @@ const PLAYER_TEAM := 0
 @onready var units_layer: UnitsLayer = $"../UnitsLayer"
 @onready var villages: Villages = get_node_or_null("../Villages")
 @onready var creeps: Creeps = get_node_or_null("../Creeps")
+@onready var roads: Roads = get_node_or_null("../Roads")
+@onready var rivers: Rivers = get_node_or_null("../Rivers")
 
 var explored: Dictionary = {}      # cases vues au moins une fois
 var visible_now: Dictionary = {}   # cases dans la vision actuelle
@@ -64,6 +66,10 @@ func recompute() -> void:
 		villages.queue_redraw()
 	if creeps:
 		creeps.queue_redraw()
+	if roads:
+		roads.queue_redraw()
+	if rivers:
+		rivers.queue_redraw()
 
 func _draw() -> void:
 	var hw := GameMap.TILE_W * 0.5 + 0.5
