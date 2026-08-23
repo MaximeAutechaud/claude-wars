@@ -23,11 +23,17 @@ extends Node2D
 # plus simple qu'un suivi des arêtes déjà visitées.
 #
 # Sous-classes (Roads, Rivers) : définir terrain_type / ribbon_half_width /
-# ribbon_tex dans `_init()` avant l'entrée en scène.
+# ribbon_tex dans `_init()` avant l'entrée en scène. `smooth_curve` peut y
+# être mis à false pour revenir à des segments droits centre-à-centre — le
+# lissage en courbe, très visible et flatteur sur le filet étroit de la
+# route, fait des vagues disgracieuses sur le ruban large de la rivière
+# (l'effet contraire de ce qui est cherché : de l'eau qui a l'air agitée
+# au lieu de couler).
 
 var terrain_type: int = -1
 var ribbon_half_width: float = 9.0
 var ribbon_tex: Texture2D
+var smooth_curve: bool = true
 
 const HUB_SIDES := 12
 const CURVE_SEGMENTS := 8
@@ -87,7 +93,7 @@ func _draw_cell(cell: Vector2i) -> void:
 		if t_there != Vector2.ZERO and t_there.dot(center - n_center) < 0.0:
 			t_there = -t_there
 
-		var d := center.distance_to(n_center) * CTRL_FACTOR
+		var d := center.distance_to(n_center) * CTRL_FACTOR if smooth_curve else 0.0
 		var p1 := center + t_here * d
 		var p2 := n_center + t_there * d
 		_draw_curve_ribbon(center, p1, p2, n_center)
