@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/rivers.gd" id="9_rivers"]
 [ext_resource type="Script" path="res://scripts/creeps.gd" id="6_creeps"]
 [ext_resource type="Script" path="res://scripts/fog.gd" id="7_fog"]
+[ext_resource type="Script" path="res://scripts/water_life_layer.gd" id="10_waterlife"]
 
 [node name="Main" type="Node2D" unique_id=2039044375]
 script = ExtResource("1_main")
@@ -21,6 +22,9 @@ script = ExtResource("2_gmap")
 
 [node name="Rivers" type="Node2D" parent="."]
 script = ExtResource("9_rivers")
+
+[node name="WaterLifeLayer" type="Node2D" parent="."]
+script = ExtResource("10_waterlife")
 
 [node name="Roads" type="Node2D" parent="."]
 script = ExtResource("8_roads")
