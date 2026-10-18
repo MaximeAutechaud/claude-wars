@@ -20,6 +20,7 @@ const PLAYER_TEAM := 0
 @onready var creeps: Creeps = get_node_or_null("../Creeps")
 @onready var roads: Roads = get_node_or_null("../Roads")
 @onready var rivers: Rivers = get_node_or_null("../Rivers")
+@onready var decor: Decor = get_node_or_null("../Decor")
 
 var explored: Dictionary = {}      # cases vues au moins une fois
 var visible_now: Dictionary = {}   # cases dans la vision actuelle
@@ -70,6 +71,8 @@ func recompute() -> void:
 		roads.queue_redraw()
 	if rivers:
 		rivers.queue_redraw()
+	if decor:
+		decor.queue_redraw()
 
 func _draw() -> void:
 	var hw := GameMap.TILE_W * 0.5 + 0.5

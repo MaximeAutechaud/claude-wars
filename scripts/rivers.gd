@@ -35,9 +35,11 @@ const FOAM_SHADER: Shader = preload("res://assets/water_foam.gdshader")
 # distance à un centre : cf. l'historique, ça donnait des bandes d'épaisseur
 # variable selon l'endroit du contour).
 const FOAM_WIDTH := 7.0
-const BEACH_CORE_WIDTH := 4.0     # sable franc
-const BEACH_TOTAL_WIDTH := 13.0   # jusqu'à disparition dans l'herbe
-const BEACH_ALPHA := 0.9
+# Berge : un liseré de sable à bord dur, sans fondu dans l'herbe (DA.md —
+# un fondu lisse se lit comme un halo flou à côté du pixel art net).
+const BEACH_WIDTH := 5.0
+# L'écume animée est un dégradé lisse, même défaut : coupée pour l'instant.
+const FOAM_ENABLED := false
 # La texture de sable générée est plus claire et plus jaune que la palette de
 # la carte : telle quelle, la berge se lit comme un halo lumineux.
 const BEACH_TINT := Color(0.86, 0.82, 0.70)
@@ -64,12 +66,13 @@ func _ready() -> void:
 			var c := Vector2i(col, row)
 			if map.get_terrain(c) == GameMap.Terrain.RIVER:
 				_cells.append(c)
-	_foam = FoamOverlay.new()
-	_foam.layer = self
-	var mat := ShaderMaterial.new()
-	mat.shader = FOAM_SHADER
-	_foam.material = mat
-	add_child(_foam)
+	if FOAM_ENABLED:
+		_foam = FoamOverlay.new()
+		_foam.layer = self
+		var mat := ShaderMaterial.new()
+		mat.shader = FOAM_SHADER
+		_foam.material = mat
+		add_child(_foam)
 	queue_redraw()
 
 func center_of(cell: Vector2i) -> Vector2:
@@ -185,25 +188,16 @@ func _draw() -> void:
 
 	# Berge d'abord, eau ensuite : la berge part vers l'extérieur, donc elle ne
 	# peut de toute façon pas mordre sur l'eau, mais l'ordre garde le rivage net.
-	# La couleur des sommets multiplie la texture : elle porte donc à la fois la
-	# teinte et le fondu vers l'herbe.
-	var opaque := BEACH_TINT
-	opaque.a = BEACH_ALPHA
-	var clear := BEACH_TINT
-	clear.a = 0.0
-	var core_cols := PackedColorArray([opaque, opaque, opaque, opaque])
-	var fade_cols := PackedColorArray([opaque, opaque, clear, clear])
+	# La couleur des sommets multiplie la texture : elle porte la teinte.
+	var tint := PackedColorArray([BEACH_TINT, BEACH_TINT, BEACH_TINT, BEACH_TINT])
 	var sand_size := SAND_TEX.get_size()
 	for poly in _outlines:
 		var n := poly.size()
-		var mid := _offset_outline(poly, -BEACH_CORE_WIDTH)
-		var outer := _offset_outline(poly, -BEACH_TOTAL_WIDTH)
+		var outer := _offset_outline(poly, -BEACH_WIDTH)
 		for j in n:
 			var k := (j + 1) % n
-			var core := PackedVector2Array([poly[j], poly[k], mid[k], mid[j]])
-			var fade := PackedVector2Array([mid[j], mid[k], outer[k], outer[j]])
-			draw_polygon(core, core_cols, _world_uvs(core, sand_size), SAND_TEX)
-			draw_polygon(fade, fade_cols, _world_uvs(fade, sand_size), SAND_TEX)
+			var band := PackedVector2Array([poly[j], poly[k], outer[k], outer[j]])
+			draw_polygon(band, tint, _world_uvs(band, sand_size), SAND_TEX)
 
 	var water_size := WATER_TEX.get_size()
 	for poly in _outlines:

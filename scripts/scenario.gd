@@ -22,6 +22,7 @@ static var active: Dictionary = CURRENT
 #              phases, sacrifice, malédiction), "name" (nom affiché).
 # Drapeaux optionnels : "sandbox" (carte de test — sauvegarde désactivée),
 #              "reveal_all" (pas de brouillard : tout est révélé).
+# "decor"    : optionnel, cell -> id de prop purement visuel (voir Decor).
 
 # « La Marche du Bord » — premier grand tableau fait main (22×16).
 # Le fleuve coupe la carte en deux, franchissable sur deux ponts (routes).
@@ -117,6 +118,127 @@ const CURRENT: Dictionary = {
 			{ "cell": Vector2i(13, 10), "type": "archer" },
 		] },
 	],
+}
+
+# « Aubry-le-Bas » — tableau vitrine du biome 1, les Terres habitées (DA.md) :
+# le monde normal qu'on protège. La garnison de l'Ordre à l'ouest, le bourg
+# d'Aubry-le-Bas sur la grand-route (auberge, puits de Vessial), ses champs,
+# son moulin et ses vergers ; la rivière à l'est, franchie par un seul pont,
+# d'où arrive une colonne du Chœur. Deux bandes de pillards tiennent une ferme
+# et le verger du sud. Le décor ("decor") est purement visuel.
+const HABITEES: Dictionary = {
+	"name": "Aubry-le-Bas",
+
+	#          0         1
+	#          01234567890123456789
+	"terrain": [
+		"FFPPPPPPPPPPPPPWPPMM",  #  0
+		"FFFPPPPPPPPPPPPWPPPM",  #  1
+		"FFPPPPPPPPPRPPPWPPPP",  #  2  chemin du moulin (11,2)
+		"PPPPPPPPPPPRPPPWWPPP",  #  3
+		"PPPPPPPPPPPRPPPPWPPP",  #  4
+		"PPPPPPPPPPPRPPPPWPPF",  #  5
+		"RRRRRRRRRRRRRRRRRRRR",  #  6  grand-route + pont (16,6)
+		"PPPPPPPPPPPPPPPPWPFF",  #  7
+		"PPPPPPPPPPPPPPPWWPPF",  #  8
+		"PPPPPPPPPPPPPPPWPPPP",  #  9
+		"PMMPPPPPPPPPPPPWPPPP",  # 10
+		"MMPPPPPPPPPPPPPWPPPP",  # 11
+		"MPPPPPPPPPPPPPPWPPMM",  # 12
+		"PPPPPPPPPPPPPPPWPPMM",  # 13
+	],
+
+	"villages": {
+		Vector2i(2, 7):   0,    # le hameau de la garnison
+		Vector2i(8, 5):  -1,    # Aubry-le-Bas, nord de la route
+		Vector2i(10, 7): -1,    # Aubry-le-Bas, sud de la route
+		Vector2i(13, 11): -1,   # la ferme du sud, tenue par des pillards
+		Vector2i(18, 4):  1,    # rive est, tenue par le Chœur
+		Vector2i(18, 9):  1,
+	},
+
+	"armies": {
+		0: [
+			{ "cell": Vector2i(1, 6), "type": "hero" },
+			{ "cell": Vector2i(2, 6), "type": "infantry" },
+			{ "cell": Vector2i(1, 7), "type": "archer" },
+			{ "cell": Vector2i(0, 6), "type": "tank" },
+			{ "cell": Vector2i(3, 6), "type": "scout" },
+		],
+		1: [
+			{ "cell": Vector2i(18, 6), "type": "hero" },
+			{ "cell": Vector2i(17, 6), "type": "infantry" },
+			{ "cell": Vector2i(18, 5), "type": "infantry" },
+			{ "cell": Vector2i(19, 7), "type": "archer" },
+			{ "cell": Vector2i(19, 5), "type": "tank" },
+		],
+	},
+
+	"camps": [
+		# Pillards du verger sud-ouest : premier farm près de la garnison
+		{ "center": Vector2i(4, 11), "prize": "archer", "units": [
+			{ "cell": Vector2i(4, 11), "type": "infantry" },
+			{ "cell": Vector2i(5, 12), "type": "archer" },
+		] },
+		# Pillards de la ferme du sud : gardent le village et l'Apothicaire
+		{ "center": Vector2i(12, 11), "prize": "medic", "units": [
+			{ "cell": Vector2i(12, 11), "type": "tank", "chief": true },
+			{ "cell": Vector2i(13, 12), "type": "archer" },
+		] },
+	],
+
+	"decor": {
+		# La garnison de l'Ordre, point de départ du joueur
+		Vector2i(1, 4): "garrison",
+		Vector2i(3, 7): "firewood",
+		Vector2i(0, 7): "barrels",
+		# Vergers au pied du bois, et leurs ruches
+		Vector2i(3, 1): "apple_tree",
+		Vector2i(4, 1): "apple_tree",
+		Vector2i(3, 2): "apple_tree",
+		Vector2i(4, 2): "apple_tree",
+		Vector2i(5, 1): "beehives",
+		# Les champs du moulin, au bout du chemin
+		Vector2i(11, 1): "windmill",
+		Vector2i(10, 2): "wheat",
+		Vector2i(12, 2): "wheat",
+		Vector2i(10, 3): "wheat",
+		Vector2i(12, 3): "wheat",
+		Vector2i(9, 3): "scarecrow",
+		Vector2i(13, 2): "haystack",
+		Vector2i(6, 3): "farmhouse",
+		# Aubry-le-Bas : l'auberge, le puits de Vessial, les maisons du bourg
+		Vector2i(9, 4): "inn",
+		Vector2i(6, 5): "house",
+		Vector2i(10, 5): "barrels",
+		Vector2i(12, 5): "bread_oven",
+		Vector2i(8, 8): "well",
+		Vector2i(7, 7): "house",
+		Vector2i(12, 7): "cart",
+		# Le carré cultivé de Sella
+		Vector2i(5, 8): "cabbages",
+		Vector2i(6, 8): "cabbages",
+		Vector2i(7, 9): "chicken_coop",
+		# Pâturages
+		Vector2i(9, 9): "sheep_pen",
+		Vector2i(8, 10): "sheep_pen",
+		Vector2i(10, 10): "cow",
+		Vector2i(11, 9): "flower_bush",
+		# La ferme du sud, occupée par les pillards
+		Vector2i(14, 10): "farmhouse",
+		Vector2i(14, 12): "barn",
+		Vector2i(11, 12): "haystack",
+		Vector2i(11, 11): "wheat",
+		# Le verger du sud-ouest, l'autre repaire de pillards
+		Vector2i(3, 11): "apple_tree",
+		Vector2i(3, 12): "apple_tree",
+		Vector2i(4, 12): "apple_tree",
+		Vector2i(5, 11): "apple_tree",
+		# Rive est, tenue par le Chœur — le pays est le même de l'autre côté
+		Vector2i(17, 11): "windmill_b",
+		Vector2i(17, 2): "cart",
+		Vector2i(17, 8): "haystack",
+	},
 }
 
 # « Terrain d'essai » — carte de test accessible depuis l'écran d'accueil :

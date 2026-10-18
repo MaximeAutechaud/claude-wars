@@ -10,7 +10,9 @@ const TYPE_BY_ID: Dictionary = {
 	"scout": Type.SCOUT, "medic": Type.MEDIC, "mage": Type.MAGE,
 }
 
-const TEAM_COLORS := [Color(0.25, 0.55, 1.0), Color(1.0, 0.30, 0.30), Color(0.95, 0.74, 0.18)]
+# Couleurs d'équipe de cendrelune_palette.md (indigo joueur, rouille adverse,
+# ocre neutre) : sourdes, comme le reste de la DA
+const TEAM_COLORS := [Color("#4E63A0"), Color("#9C4338"), Color("#A88A45")]
 
 # Équipe des creeps : ignorée par les conditions de victoire, ne capture pas
 const NEUTRAL_TEAM := 2
@@ -164,6 +166,17 @@ const TEXTURES: Dictionary = {
 }
 
 const IDLE_FRAME_TIME := 0.5
+
+# Gestes ponctuels, optionnels (Type -> Array[Texture2D], sans la pose de
+# repos) : à la place de l'alternance de TEXTURES, l'unité respire en continu
+# (étirement vertical procédural, ancré aux pieds) et joue de temps en temps
+# son geste, à intervalle irrégulier. Vide par défaut ; l'aperçu pixel art
+# la remplit.
+static var gestures: Dictionary = {}
+const GESTURE_FRAME_TIME := 0.11
+const GESTURE_DELAY := Vector2(6.0, 15.0)    # secondes entre deux gestes (tirage)
+const BREATH_PERIOD := Vector2(2.2, 2.8)     # durée d'une respiration (tirage par unité)
+const BREATH_AMP := 0.02                     # étirement vertical maximal
 
 # ── Marche visuelle (animations de déplacement, style rétro) ────────────────
 # La logique de jeu est instantanée (move_unit met tout à jour au clic) ;
@@ -345,6 +358,9 @@ func vision() -> int:
 var _idle_frame := 0
 var _idle_timer: Timer
 var _sprite_base_y := 0.0
+var _gesture_tween: Tween
+var _breath_phase := 0.0
+var _breath_period := 0.0
 
 func _ready() -> void:
 	sprite.texture = TEXTURES[type][0]
@@ -355,14 +371,50 @@ func _ready() -> void:
 	# Les rouges regardent vers la gauche (face au joueur, façon Advance Wars)
 	sprite.flip_h = (team == 1)
 	_idle_timer = Timer.new()
-	_idle_timer.wait_time = IDLE_FRAME_TIME
-	_idle_timer.autostart = true
-	_idle_timer.timeout.connect(_advance_idle_frame)
+	_idle_timer.timeout.connect(_on_idle_timer)
 	add_child(_idle_timer)
+	set_process(type in gestures)
+	if type in gestures:
+		# Chaque unité respire à son rythme : pas d'armée qui respire en chœur
+		_breath_phase = randf() * TAU
+		_breath_period = randf_range(BREATH_PERIOD.x, BREATH_PERIOD.y)
+		_idle_timer.one_shot = true
+		_idle_timer.start(randf_range(GESTURE_DELAY.x, GESTURE_DELAY.y))
+	else:
+		_idle_timer.start(IDLE_FRAME_TIME)
 
-func _advance_idle_frame() -> void:
-	_idle_frame = 1 - _idle_frame
-	sprite.texture = TEXTURES[type][_idle_frame]
+func _process(delta: float) -> void:
+	if walking:
+		return
+	_breath_phase = fmod(_breath_phase + delta * TAU / _breath_period, TAU)
+	var a := BREATH_AMP * (0.5 - 0.5 * cos(_breath_phase))
+	sprite.scale = Vector2(1.0, 1.0 + a)
+	sprite.position.y = _sprite_base_y - sprite.texture.get_height() * a * 0.5
+
+func _on_idle_timer() -> void:
+	if type not in gestures:
+		_idle_frame = 1 - _idle_frame
+		sprite.texture = TEXTURES[type][_idle_frame]
+	elif walking:
+		_idle_timer.start(randf_range(GESTURE_DELAY.x, GESTURE_DELAY.y))
+	else:
+		_play_gesture()
+
+# Le geste part de la pose de repos et y revient ; tween lié à l'unité, donc
+# interrompu proprement si elle meurt ou se met à marcher
+func _play_gesture() -> void:
+	_gesture_tween = create_tween()
+	for tex: Texture2D in gestures[type]:
+		_gesture_tween.tween_callback(sprite.set_texture.bind(tex))
+		_gesture_tween.tween_interval(GESTURE_FRAME_TIME)
+	_gesture_tween.tween_callback(_end_gesture)
+
+func _end_gesture() -> void:
+	if _gesture_tween:
+		_gesture_tween.kill()
+		_gesture_tween = null
+	sprite.texture = TEXTURES[type][0]
+	_idle_timer.start(randf_range(GESTURE_DELAY.x, GESTURE_DELAY.y))
 
 # ── Marche visuelle ──────────────────────────────────────────────────────────
 
@@ -373,7 +425,11 @@ func walk_along(points: PackedVector2Array) -> void:
 	if points.is_empty():
 		return
 	walking = true
-	_idle_timer.wait_time = IDLE_FRAME_TIME / 3.0
+	if type in gestures:
+		if _gesture_tween:
+			_end_gesture()
+	else:
+		_idle_timer.wait_time = IDLE_FRAME_TIME / 3.0
 	var step := WALK_STEP_FAST if type in [Type.TANK, Type.SCOUT] else WALK_STEP
 	var tw := create_tween()
 	var prev := position
@@ -385,7 +441,8 @@ func walk_along(points: PackedVector2Array) -> void:
 	await tw.finished
 	_spawn_dust(position)
 	walking = false
-	_idle_timer.wait_time = IDLE_FRAME_TIME
+	if type not in gestures:
+		_idle_timer.wait_time = IDLE_FRAME_TIME
 	sprite.rotation_degrees = 0.0
 	sprite.scale = Vector2.ONE
 	sprite.position.y = _sprite_base_y

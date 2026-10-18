@@ -38,6 +38,13 @@ var smooth_curve: bool = true
 const HUB_SIDES := 12
 const CURVE_SEGMENTS := 8
 const CTRL_FACTOR := 0.4   # force du lissage, fraction de la distance centre-à-centre
+# Tracé moins régulier (DA.md : « une trace de passage, pas un ruban
+# dessiné ») : une case de passage n'ancre plus le tracé sur son centre mais
+# le rapproche du milieu de ses deux voisines, ce qui écrase le zigzag des
+# colonnes odd-q (0.5 le supprimerait tout à fait), puis le décale d'un
+# petit écart propre à la case, stable d'une partie à l'autre.
+const STRAIGHTEN := 0.4
+const JITTER := 3.0        # écart latéral max, en pixels
 
 @onready var map: GameMap = $"../GameMap"
 @onready var fog: Fog = get_node_or_null("../Fog")
@@ -61,6 +68,18 @@ func _draw() -> void:
 func _center_of(cell: Vector2i) -> Vector2:
 	return to_local(map.to_global(map.map_to_local(cell)))
 
+# Point de passage du tracé dans la case (centre pour un bout ou un carrefour)
+func _anchor_of(cell: Vector2i) -> Vector2:
+	var center := _center_of(cell)
+	var neighbors := _neighbor_cells(cell)
+	if neighbors.size() != 2:
+		return center
+	var a := _center_of(neighbors[0])
+	var b := _center_of(neighbors[1])
+	var dir := (b - a).normalized()
+	var wobble := (float(hash(cell) % 1000) / 999.0 * 2.0 - 1.0) * JITTER
+	return center.lerp((a + b) * 0.5, STRAIGHTEN) + Vector2(-dir.y, dir.x) * wobble
+
 func _neighbor_cells(cell: Vector2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	for n in Pathfinder.get_neighbors(cell):
@@ -73,17 +92,17 @@ func _neighbor_cells(cell: Vector2i) -> Array[Vector2i]:
 # (pas de lissage) pour un embranchement ou une case isolée.
 func _tangent_at(cell: Vector2i, neighbors: Array[Vector2i]) -> Vector2:
 	if neighbors.size() == 1:
-		return (_center_of(neighbors[0]) - _center_of(cell)).normalized()
+		return (_anchor_of(neighbors[0]) - _anchor_of(cell)).normalized()
 	if neighbors.size() == 2:
-		return (_center_of(neighbors[1]) - _center_of(neighbors[0])).normalized()
+		return (_anchor_of(neighbors[1]) - _anchor_of(neighbors[0])).normalized()
 	return Vector2.ZERO
 
 func _draw_cell(cell: Vector2i) -> void:
-	var center := _center_of(cell)
+	var center := _anchor_of(cell)
 	var neighbors := _neighbor_cells(cell)
 	var tangent := _tangent_at(cell, neighbors)
 	for n in neighbors:
-		var n_center := _center_of(n)
+		var n_center := _anchor_of(n)
 		var n_tangent := _tangent_at(n, _neighbor_cells(n))
 
 		var t_here := tangent

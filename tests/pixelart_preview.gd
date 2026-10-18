@@ -10,10 +10,10 @@ extends Node
 # classe du jeu (Unit, GameMap…) avant l'échange, sinon leur script — et ses
 # preload — serait compilé trop tôt avec les anciennes textures.
 #
-# Jouer en pixel art (carte de test) :
+# Jouer en pixel art (par défaut : Aubry-le-Bas, le tableau du biome 1) :
 #   Godot --path . res://tests/pixelart_preview.tscn
 # Capture, pour comparer les deux styles sur le même cadrage :
-#   Godot --path . res://tests/pixelart_preview.tscn -- sortie.png pixel|orig sandbox|campaign fit|<zoom>
+#   Godot --path . res://tests/pixelart_preview.tscn -- sortie.png pixel|orig sandbox|campaign|habitees fit|<zoom>
 
 const UNIT_NAMES := ["infantry", "tank", "archer", "hero", "boss", "scout", "medic", "mage"]
 const TILE_NAMES := ["plains", "forest", "mountain", "village", "river", "sand", "road"]
@@ -27,7 +27,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out: String = args[0] if args.size() > 0 else ""
 	var style: String = args[1] if args.size() > 1 else "pixel"
-	var map_name: String = args[2] if args.size() > 2 else "sandbox"
+	var map_name: String = args[2] if args.size() > 2 else "habitees"
 	var framing: String = args[3] if args.size() > 3 else "fit"
 
 	if style == "pixel":
@@ -37,6 +37,16 @@ func _ready() -> void:
 	var scenario: GDScript = load("res://scripts/scenario.gd")
 	if map_name == "sandbox":
 		scenario.active = scenario.SANDBOX
+	elif map_name == "habitees":
+		# Vitrine : les classes absentes des armées du tableau (Apothicaire,
+		# Alchimiste, Fossoyeur) rejoignent les camps, pour voir tout le roster
+		var habitees: Dictionary = scenario.HABITEES.duplicate(true)
+		habitees["armies"][0].append_array([
+			{ "cell": Vector2i(2, 5), "type": "medic" },
+			{ "cell": Vector2i(3, 5), "type": "mage" },
+		])
+		habitees["armies"][1].append({ "cell": Vector2i(17, 7), "type": "boss" })
+		scenario.active = habitees
 	var main: Node2D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	if style == "pixel":
 		main.get_node("UnitsLayer").child_entered_tree.connect(_smooth_unit_sprite)
@@ -54,6 +64,7 @@ func _ready() -> void:
 
 func _swap_textures() -> void:
 	# Unités : version HD (double densité, units_hd/) si elle existe, sinon 48 px
+	var gestures := {}
 	for n: String in UNIT_NAMES:
 		for suffix: String in ["", "_2"]:
 			var hd := "res://assets_pixelart/units_hd/%s%s.png" % [n, suffix]
@@ -62,6 +73,17 @@ func _swap_textures() -> void:
 				_take_over(hd, dst, true)
 			else:
 				_take_over("res://assets_pixelart/units/%s%s.png" % [n, suffix], dst)
+		# Geste ponctuel (_geste_1, _geste_2…) : respiration + geste dans Unit
+		var frames: Array[Texture2D] = []
+		var path := "res://assets_pixelart/units_hd/%s_geste_%d.png"
+		while FileAccess.file_exists(path % [n, frames.size() + 1]):
+			frames.append(_load_hd(path % [n, frames.size() + 1]))
+		if not frames.is_empty():
+			gestures[n.to_upper()] = frames
+	# Chargé seulement maintenant, comme game_map.gd plus bas
+	var unit: GDScript = load("res://scripts/unit.gd")
+	for n: String in gestures:
+		unit.gestures[unit.Type[n]] = gestures[n]
 	for n: String in TILE_NAMES:
 		_take_over("res://assets_pixelart/tiles/%s.png" % n, "res://assets/tiles/%s.png" % n)
 	# Variantes de plaine (même sol, détails différents), aussi sous les routes.
@@ -77,6 +99,11 @@ func _swap_textures() -> void:
 	var game_map: GDScript = load("res://scripts/game_map.gd")
 	var terrain: Dictionary = game_map.Terrain
 	game_map.terrain_variants = {terrain["PLAINS"]: variants, terrain["ROAD"]: variants}
+	# Forêt en arbres individuels (decor/oak_N.png) sur un sous-bois d'herbe
+	# ombrée : on écarte les jeunes pousses, la souche et le hêtre pâle.
+	var decor: GDScript = load("res://scripts/decor.gd")
+	decor.forest_trees.assign(["oak_0", "oak_1", "oak_2", "oak_3", "oak_5", "oak_6", "oak_8",
+		"oak_10", "oak_11", "oak_13", "oak_14", "oak_15"])
 
 # Chargée depuis le fichier brut (pas via l'import) : pas de cache .godot/imported
 # périmé possible quand le pack est régénéré.
@@ -87,14 +114,21 @@ func _take_over(src: String, dst: String, hd := false) -> void:
 	if not FileAccess.file_exists(src):
 		push_warning("Pixel art manquant, ancien asset conservé : " + src)
 		return
-	var img := Image.load_from_file(ProjectSettings.globalize_path(src))
+	var tex: ImageTexture
 	if hd:
-		img.generate_mipmaps()
-	var tex := ImageTexture.create_from_image(img)
-	if hd:
-		tex.set_size_override(img.get_size() / 2)
+		tex = _load_hd(src)
+	else:
+		tex = ImageTexture.create_from_image(Image.load_from_file(ProjectSettings.globalize_path(src)))
+		_keep_alive.append(tex)
 	tex.take_over_path(dst)
+
+func _load_hd(src: String) -> ImageTexture:
+	var img := Image.load_from_file(ProjectSettings.globalize_path(src))
+	img.generate_mipmaps()
+	var tex := ImageTexture.create_from_image(img)
+	tex.set_size_override(img.get_size() / 2)
 	_keep_alive.append(tex)
+	return tex
 
 # Les sprites HD sont affichés à ~1 pixel source par pixel écran : un filtrage
 # lissé (avec mipmaps pour le dézoom) les rend nets, là où le filtre « nearest »
@@ -115,7 +149,7 @@ func _reveal(main: Node2D) -> void:
 	for child in main.get_node("UnitsLayer").get_children():
 		if child is Node2D:
 			child.visible = true
-	for layer in ["Fog", "Villages", "Creeps", "Roads", "Rivers"]:
+	for layer in ["Fog", "Villages", "Creeps", "Roads", "Rivers", "Decor"]:
 		main.get_node(layer).queue_redraw()
 
 func _frame(main: Node2D, framing: String) -> void:

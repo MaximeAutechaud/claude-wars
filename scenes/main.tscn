@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/creeps.gd" id="6_creeps"]
 [ext_resource type="Script" path="res://scripts/fog.gd" id="7_fog"]
 [ext_resource type="Script" path="res://scripts/water_life_layer.gd" id="10_waterlife"]
+[ext_resource type="Script" path="res://scripts/decor.gd" id="11_decor"]
 
 [node name="Main" type="Node2D" unique_id=2039044375]
 script = ExtResource("1_main")
@@ -28,6 +29,9 @@ script = ExtResource("10_waterlife")
 
 [node name="Roads" type="Node2D" parent="."]
 script = ExtResource("8_roads")
+
+[node name="Decor" type="Node2D" parent="."]
+script = ExtResource("11_decor")
 
 [node name="Villages" type="Node2D" parent="."]
 script = ExtResource("5_villages")

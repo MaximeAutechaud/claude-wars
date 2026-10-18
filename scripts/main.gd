@@ -395,10 +395,10 @@ func _check_game_over() -> bool:
 	attack_zone_btn.hide()
 	if ai_lost:
 		end_label.text = "Victoire !"
-		end_label.modulate = Unit.TEAM_COLORS[0]
+		end_label.modulate = _ui_team_color(0)
 	else:
 		end_label.text = "Défaite…"
-		end_label.modulate = Unit.TEAM_COLORS[AI_TEAM]
+		end_label.modulate = _ui_team_color(AI_TEAM)
 	end_screen.show()
 	return true
 
@@ -741,7 +741,7 @@ func _show_unit_panel(u: Unit) -> void:
 		team_label.text = "Joueur 1 (Bleu)"
 	else:
 		team_label.text = "Ennemi (Rouge)"
-	team_label.modulate = Unit.TEAM_COLORS[u.team]
+	team_label.modulate = _ui_team_color(u.team)
 
 	hp_label.text = "PV : %d / %d" % [u.hp, u.max_hp]
 	var defense := units_layer.defense_of(u)
@@ -843,10 +843,15 @@ func _update_combat_preview() -> void:
 	preview_label.position = units_layer.map_to_screen(target.cell) + Vector2(22, -34)
 	preview_label.show()
 
+# Les couleurs d'équipe sont sourdes (palette de la DA) : sur le fond sombre de
+# l'interface, le texte les reprend éclaircies pour rester lisible.
+func _ui_team_color(team: int) -> Color:
+	return Unit.TEAM_COLORS[team].lightened(0.35)
+
 func _update_turn_label() -> void:
 	if creep_phase:
 		turn_label.text = "Tour %d — Créatures neutres…" % turn_count
-		turn_label.modulate = Unit.TEAM_COLORS[Unit.NEUTRAL_TEAM]
+		turn_label.modulate = _ui_team_color(Unit.NEUTRAL_TEAM)
 		return
 	var player_names := ["Joueur 1 (Bleu)", "IA (Rouge)"]
 	var unit_label := ""
@@ -862,4 +867,4 @@ func _update_turn_label() -> void:
 	}
 	var suffix: String = " — Réflexion…" if ai_thinking else hints.get(state, "")
 	turn_label.text = "Tour %d — %s%s" % [turn_count, player_names[current_player], suffix]
-	turn_label.modulate = Unit.TEAM_COLORS[current_player]
+	turn_label.modulate = _ui_team_color(current_player)

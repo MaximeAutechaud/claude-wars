@@ -33,6 +33,7 @@ func _ready() -> void:
 	main.get_node("Creeps").queue_redraw()
 	main.get_node("Roads").queue_redraw()
 	main.get_node("Rivers").queue_redraw()
+	main.get_node("Decor").queue_redraw()
 
 	# Cadre la carte entière
 	var top_left := map.to_global(map.map_to_local(Vector2i.ZERO))
