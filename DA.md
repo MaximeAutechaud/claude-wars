@@ -334,3 +334,63 @@ remappés sont archivés dans `autogen\biome1\units_hd_muted_v1\`.
   L'aperçu ajoute l'Apothicaire, l'Alchimiste et le Fossoyeur aux armées
   d'Aubry-le-Bas pour qu'on voie tout le roster ; le tableau lui-même n'est
   pas modifié.
+- **18/10/2026** : Maxime trouve le geste d'Aurel parfait. On retravaille
+  les autres unités **une par une** sur ce modèle en trois temps : aller,
+  pause, retour (`gen_geste3.py`, `install_geste3.py`). Premier fait, le
+  **Guerrier** : il plante son bouclier au sol, s'appuie dessus, s'essuie le
+  front en soufflant, puis reprend sa garde (22 frames, environ 4
+  générations). Dans la pause, le modèle a dessiné une deuxième lame dans la
+  main qui essuie le front. On l'a recolorée en cuir de gant, ce qui donne
+  l'avant-bras (`retouche_guerrier_pause.py`, frames brutes conservées).
+  Maxime n'est pas convaincu. **Version 2** en plusieurs étapes enchaînées :
+  il pose le bouclier, plante son épée verticalement dans le sol, souffle,
+  puis reprend ses armes (38 frames, environ 4 s). Le modèle n'a pas compris
+  « rengainer » : il relevait l'épée au lieu de la ranger (essai archivé).
+  Planter l'épée, un geste vers le bas, a marché du premier coup. La pause
+  ne fait pas le geste d'essuyer le front : il souffle, les yeux fermés, et
+  secoue sa main. L'installation comble les petits trous transparents (le
+  modèle trouait l'umbo du bouclier). La v1 est archivée dans
+  `geste3_v1_appui\`. Maxime laisse le Guerrier de côté pour le moment.
+- **18/10/2026** : **Archer**, « sentir le vent ». Il se redresse et baisse
+  l'arc jusqu'au flanc, humecte son index, lève le bras tout en haut, tourne
+  la tête ; une rafale fait voler sa cape, il hoche la tête puis rebande
+  (30 frames, environ 3,3 s, environ 4 générations). Maxime trouvait la
+  scène trop discrète et demandait un mouvement **marqué**. Pour ça : un
+  aller plus ample, une pause de 12 frames et un temps d'arrêt (frames
+  doublées, `PAUSE_HOLD`) sur le bras levé. Maxime adore.
+- **18/10/2026** : **Cavalier**, « le cheval broute ». Le cheval baisse la
+  tête jusqu'à l'herbe, la lance du cavalier bascule sur son épaule. Le
+  cheval broute et fouette de la queue, le cavalier se penche pour lui
+  tapoter l'encolure, puis tout revient (31 frames, environ 4 générations).
+  Le comblement des trous de l'installation est désormais réservé au
+  Guerrier : sur le cheval, il bouchait les vrais vides entre les jambes et
+  les rênes. Maxime valide.
+- **18/10/2026** : **Éclaireur**, « le moineau ». Un moineau arrive, tourne
+  au-dessus de sa tête et se pose au bout de sa longue-vue. L'Éclaireur le
+  regarde en souriant pendant que l'oiseau sautille, puis le moineau
+  s'envole : c'est son arrivée rejouée à l'envers (31 frames, environ 4
+  générations). Faire apparaître un élément nouveau a marché du premier
+  coup. En revanche, le recalage sur les couleurs du repos, en RVB brut,
+  rendait l'oiseau couleur chair. Pour cette unité, on recale sur toute la
+  palette Cendrelune, et dans l'espace Lab (`PALETTE_ETENDUE`). Maxime
+  valide.
+- **19/10/2026** : **Apothicaire**, « la cueillette ». C'est un vrai cycle,
+  sans aller-retour à l'envers, sinon elle « replanterait » la fleur. Elle
+  range sa fiole dans sa sacoche, s'accroupit, cueille une petite fleur
+  blanche, la respire les yeux fermés en souriant, la range, puis ressort
+  sa fiole et la relève (34 frames, environ 10 générations). La dernière
+  étape (`fin`) se termine sur la pose de repos. Premier essai raté : avec
+  la fiole en main, elle ne cueillait rien, d'où l'étape qui libère d'abord
+  la main. Le modèle laissait une touffe d'herbe au sol, effacée à
+  l'installation (`ILOTS`, îlots détachés de 150 px au plus).
+- **19/10/2026** : **Alchimiste**, « la fiole explose », d'après une idée de
+  Maxime. Sa fiole lui explose dans la main (éclair, bouffée de fumée), il
+  chasse la fumée d'une main devant son visage, puis prend une fiole neuve
+  à sa bandoulière et la relève (27 frames, environ 14 générations, essais
+  compris). Le modèle a refusé trois fois de lui faire **battre des bras** :
+  avec deux formulations, puis avec `enhance_prompt`. La solution de Maxime,
+  une seule main qui fait un va-et-vient à hauteur du visage, a marché.
+  Retenu : sur ce personnage massif, pas de grands gestes des deux bras.
+  Sous l'éclair, le foulard d'équipe tombait sur un des bleus de la palette :
+  la palette étendue exclut désormais les bleus, l'indigo d'équipe reste le
+  seul.
