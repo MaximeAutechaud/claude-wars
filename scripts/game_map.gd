@@ -35,6 +35,14 @@ const TERRAIN_TEXTURE: Dictionary = {
 	Terrain.RIVER:    preload("res://assets/tiles/plains.png"),
 }
 
+# Variantes visuelles optionnelles d'un terrain (Terrain -> Array[Texture2D],
+# chacune à TILE_W×TILE_H comme les autres, cf. le piège de _build_tileset) :
+# chaque case en tire une au hasard — mais de façon stable, d'après ses
+# coordonnées — parmi la texture de base et ses variantes, pour casser la
+# répétition d'une même tuile sur une grande étendue. Vide par défaut.
+static var terrain_variants: Dictionary = {}
+const VARIANT_SOURCE_BASE := 100   # source_id = base + terrain * 10 + index
+
 # grid[col][row] = valeur Terrain — chargée depuis le scénario courant
 var grid: Array = []
 var map_size := Vector2i.ZERO
@@ -68,6 +76,13 @@ func _build_tileset() -> void:
 		source.texture_region_size = Vector2i(TILE_W, TILE_H)
 		source.create_tile(Vector2i.ZERO)
 		ts.add_source(source, t)
+		var variants: Array = terrain_variants.get(t, [])
+		for i in variants.size():
+			var vsource := TileSetAtlasSource.new()
+			vsource.texture = variants[i]
+			vsource.texture_region_size = Vector2i(TILE_W, TILE_H)
+			vsource.create_tile(Vector2i.ZERO)
+			ts.add_source(vsource, VARIANT_SOURCE_BASE + t * 10 + i)
 
 	tile_set = ts
 
@@ -86,7 +101,14 @@ func _paint_grid() -> void:
 	for col in map_size.x:
 		for row in map_size.y:
 			var t: int = grid[col][row]
-			set_cell(Vector2i(col, row), t, Vector2i.ZERO)
+			var cell := Vector2i(col, row)
+			var source_id := t
+			var n_variants: int = (terrain_variants.get(t, []) as Array).size()
+			if n_variants > 0:
+				var pick := hash(cell) % (n_variants + 1)
+				if pick > 0:
+					source_id = VARIANT_SOURCE_BASE + t * 10 + pick - 1
+			set_cell(cell, source_id, Vector2i.ZERO)
 
 func get_terrain(cell: Vector2i) -> int:
 	if not is_in_bounds(cell):
