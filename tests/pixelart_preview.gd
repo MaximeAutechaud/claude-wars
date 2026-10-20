@@ -84,6 +84,10 @@ func _swap_textures() -> void:
 	var unit: GDScript = load("res://scripts/unit.gd")
 	for n: String in gestures:
 		unit.gestures[unit.Type[n]] = gestures[n]
+	# Alchimiste : la fiole se fend dans sa main (mage_geste_4) ; le flash et la
+	# fumée sont des particules, le sprite ne sait pas les dessiner
+	if "MAGE" in gestures:
+		unit.gesture_puffs[unit.Type["MAGE"]] = { 3: Vector2(11, 5) }
 	for n: String in TILE_NAMES:
 		_take_over("res://assets_pixelart/tiles/%s.png" % n, "res://assets/tiles/%s.png" % n)
 	# Variantes de plaine (même sol, détails différents), aussi sous les routes.

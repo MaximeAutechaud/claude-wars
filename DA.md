@@ -394,3 +394,30 @@ remappés sont archivés dans `autogen\biome1\units_hd_muted_v1\`.
   Sous l'éclair, le foulard d'équipe tombait sur un des bleus de la palette :
   la palette étendue exclut désormais les bleus, l'indigo d'équipe reste le
   seul.
+- **20/10/2026** : **Guerrier v3**, à la demande de Maxime. Il baisse sa
+  garde, plante son épée, s'essuie le front du dos du poignet, souffle,
+  puis reprend son épée et remonte sa garde (50 frames, environ 5,5 s,
+  12 générations dont 6 ratées). Pourquoi la v2 échouait : la pause est
+  ancrée aux deux bouts sur la même image, et dans ce mode le modèle bride
+  le mouvement. L'essuyage du front, devenu une étape « aller » à part
+  entière, a marché du premier coup. **Le modèle ne sait pas faire pivoter
+  une lame autour du poing.** Trois essais : deux formulations, puis une
+  pose d'arrivée retouchée à la main (il balayait alors l'épée à
+  l'horizontale avant de sauter à la verticale). Cette étape est donc
+  **calculée** (`planter_epee.py`) : le corps reste fixe, l'épée tourne
+  autour du poing et sa pointe s'enfonce dans le sol. À l'étape du front,
+  le modèle emportait l'épée avec la main : `retouche_guerrier_front.py`
+  recolle l'épée plantée et sa poignée. L'umbo du bouclier clignotait
+  (gris, brun, troué) : l'installation recolle celui du repos, calé sur la
+  bordure du bouclier (`UMBO`).
+- **20/10/2026** : **Alchimiste v2**. Dans la v1, le modèle dessinait la
+  fumée comme une boule brune opaque, restée collée à la main pendant tout
+  le geste : nos sprites n'ont ni transparence partielle ni couleurs
+  libres. Désormais, **le sprite ne fait que la réaction** : la fiole se
+  fend et ses éclats tombent, il tousse dans son poing, puis ramasse une
+  fiole neuve et la relève (26 frames, 6 générations, aucune ratée). **Le
+  flash et la fumée sont des particules du jeu** (`Unit.gesture_puffs`,
+  `_spawn_puff`) : un éclair chaud, puis une fumée grise translucide qui
+  monte devant son visage. Le mécanisme reste vide par défaut, c'est
+  l'aperçu qui le remplit. Il servira aussi pour la lueur du Fossoyeur.
+  v1 archivée dans `geste3_v1_explosion\`.

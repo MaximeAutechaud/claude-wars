@@ -177,6 +177,12 @@ const GESTURE_FRAME_TIME := 0.11
 const GESTURE_DELAY := Vector2(6.0, 15.0)    # secondes entre deux gestes (tirage)
 const BREATH_PERIOD := Vector2(2.2, 2.8)     # durée d'une respiration (tirage par unité)
 const BREATH_AMP := 0.02                     # étirement vertical maximal
+# Bouffées d'un geste (Type -> { indice dans gestures[type] : point d'émission,
+# en pixels affichés depuis le centre du sprite, unité tournée vers la droite }) :
+# flash et fumée translucides, que les sprites (opaques, palette fixe) ne
+# savent pas dessiner. Vide par défaut ; l'aperçu pixel art le remplit.
+static var gesture_puffs: Dictionary = {}
+static var _puff_texture: GradientTexture2D
 
 # ── Marche visuelle (animations de déplacement, style rétro) ────────────────
 # La logique de jeu est instantanée (move_unit met tout à jour au clic) ;
@@ -404,8 +410,12 @@ func _on_idle_timer() -> void:
 # interrompu proprement si elle meurt ou se met à marcher
 func _play_gesture() -> void:
 	_gesture_tween = create_tween()
-	for tex: Texture2D in gestures[type]:
-		_gesture_tween.tween_callback(sprite.set_texture.bind(tex))
+	var puffs: Dictionary = gesture_puffs.get(type, {})
+	var frames: Array = gestures[type]
+	for i in frames.size():
+		_gesture_tween.tween_callback(sprite.set_texture.bind(frames[i]))
+		if i in puffs:
+			_gesture_tween.tween_callback(_spawn_puff.bind(puffs[i]))
 		_gesture_tween.tween_interval(GESTURE_FRAME_TIME)
 	_gesture_tween.tween_callback(_end_gesture)
 
@@ -491,6 +501,70 @@ func _spawn_dust(at: Vector2) -> void:
 	p.emitting = true
 	p.finished.connect(p.queue_free)
 	get_parent().add_child(p)
+
+# Bouffée d'un geste (fiole qui éclate) : un flash chaud très bref, puis une
+# fumée grise translucide qui monte, gonfle et s'estompe. Dans le parent, comme
+# la poussière : elle reste sur place si l'unité repart.
+func _spawn_puff(offset: Vector2) -> void:
+	if get_parent() == null:
+		return
+	if _puff_texture == null:
+		var g := Gradient.new()
+		g.set_color(0, Color.WHITE)
+		g.set_color(1, Color(1, 1, 1, 0))
+		_puff_texture = GradientTexture2D.new()
+		_puff_texture.gradient = g
+		_puff_texture.fill = GradientTexture2D.FILL_RADIAL
+		_puff_texture.fill_from = Vector2(0.5, 0.5)
+		_puff_texture.fill_to = Vector2(0.5, 0.0)
+		_puff_texture.width = 16
+		_puff_texture.height = 16
+	var at := position + sprite.position + Vector2(-offset.x if sprite.flip_h else offset.x, offset.y)
+	var flash := _puff_particles(at, 6, 0.18, 1.0)
+	flash.initial_velocity_min = 10.0
+	flash.initial_velocity_max = 24.0
+	flash.scale_amount_min = 0.5
+	flash.scale_amount_max = 0.9
+	flash.color_ramp = _ramp(Color(1.0, 0.92, 0.6, 1.0), Color(1.0, 0.55, 0.2, 0.0))
+	var smoke := _puff_particles(at, 12, 1.8, 0.75)
+	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	smoke.emission_sphere_radius = 3.0
+	smoke.direction = Vector2(0, -1)
+	smoke.spread = 35.0
+	smoke.gravity = Vector2(0, -28)
+	smoke.initial_velocity_min = 8.0
+	smoke.initial_velocity_max = 18.0
+	smoke.damping_min = 2.0
+	smoke.damping_max = 4.0
+	smoke.scale_amount_min = 0.8
+	smoke.scale_amount_max = 1.2
+	var grow := Curve.new()
+	grow.add_point(Vector2(0, 0.6))
+	grow.add_point(Vector2(1, 2.6))
+	smoke.scale_amount_curve = grow
+	smoke.color_ramp = _ramp(Color(0.66, 0.64, 0.62, 0.55), Color(0.6, 0.59, 0.58, 0.0))
+
+func _puff_particles(at: Vector2, amount: int, lifetime: float, explosiveness: float) -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.one_shot = true
+	p.explosiveness = explosiveness
+	p.amount = amount
+	p.lifetime = lifetime
+	p.position = at
+	p.z_index = 1
+	p.texture = _puff_texture
+	p.spread = 180.0
+	p.gravity = Vector2.ZERO
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+	get_parent().add_child(p)
+	return p
+
+static func _ramp(from: Color, to: Color) -> Gradient:
+	var g := Gradient.new()
+	g.set_color(0, from)
+	g.set_color(1, to)
+	return g
 
 # Pop d'arrivée du Bond : une téléportation, pas une marche
 func blink_pop() -> void:
